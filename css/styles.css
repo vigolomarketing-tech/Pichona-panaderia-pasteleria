@@ -184,48 +184,77 @@ a { color: var(--color-camel-dark); }
 }
 
 /* ---------------- Hero ---------------- */
+/* La foto es la persiana de Pichona pintada a mano — el nombre ya está
+   dibujado ahí, así que el degradé solo oscurece el tercio inferior
+   (para que se lean la bajada y los botones) y deja el mural a la vista. */
 .hero {
   position: relative;
   color: #fff;
   isolation: isolate;
+  background: #0f0f0f;
+  min-height: 78vh;
+  display: flex;
+  align-items: flex-end;
+}
+@media (min-width: 700px) {
+  .hero { min-height: 92vh; }
 }
 .hero__media {
   position: absolute;
   inset: 0;
   z-index: -1;
+  background: #0f0f0f;
 }
 .hero__media::after {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(30,20,12,0.45) 0%, rgba(30,20,12,0.6) 55%, rgba(30,20,12,0.85) 100%);
+  background: linear-gradient(180deg, rgba(15,15,15,0) 0%, rgba(15,15,15,0) 58%, rgba(15,15,15,0.68) 100%);
 }
 .hero__media img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-}
-.hero {
-  min-height: 88vh;
-  display: flex;
-  align-items: flex-end;
+  object-position: 50% 38%;
 }
 .hero__content {
   padding-top: 3rem;
-  padding-bottom: 3.5rem;
+  padding-bottom: 2.75rem;
 }
 .hero__content .eyebrow { color: #EBD9BC; }
-.hero h1 { color: #fff; margin-bottom: 0.15em; }
 .hero__tagline {
-  font-size: 1.15rem;
-  max-width: 34em;
-  color: #F5EFE4;
+  font-family: var(--font-titulo);
+  font-weight: 600;
+  font-size: clamp(1.4rem, 4.5vw, 2.1rem);
+  max-width: 22em;
+  color: var(--color-crema);
+  margin-bottom: 0.3em;
 }
 .hero__actions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.9rem;
   margin-top: 1.5rem;
+}
+
+/* ---------------- Galería rápida (debajo del hero) ---------------- */
+.galeria-rapida {
+  padding: 0.9rem 1.25rem;
+}
+.galeria-rapida__grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.6rem;
+}
+@media (min-width: 700px) {
+  .galeria-rapida__grid { grid-template-columns: repeat(4, 1fr); gap: 0.9rem; }
+}
+.galeria-rapida__grid img {
+  width: 100%;
+  height: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  border-radius: 10px;
 }
 
 /* ---------------- Quién es Euge ---------------- */

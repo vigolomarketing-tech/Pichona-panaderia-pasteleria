@@ -17,13 +17,13 @@
 <meta property="og:site_name" content="Pichona">
 <meta property="og:title" content="Pichona — Panadería y Pastelería en José Mármol">
 <meta property="og:description" content="Pan artesanal, pastelería, petit fours y catering para eventos en zona sur del GBA. Mitre 1997, José Mármol. Pedí por WhatsApp.">
-<meta property="og:image" content="https://www.pichona.com.ar/assets/img/local-fachada.jpg">
+<meta property="og:image" content="https://www.pichona.com.ar/assets/img/hero-persiana.jpg">
 <meta property="og:url" content="https://www.pichona.com.ar/">
 <meta property="og:locale" content="es_AR">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Pichona — Panadería y Pastelería en José Mármol">
 <meta name="twitter:description" content="Pan artesanal, pastelería, petit fours y catering para eventos en zona sur del GBA.">
-<meta name="twitter:image" content="https://www.pichona.com.ar/assets/img/local-fachada.jpg">
+<meta name="twitter:image" content="https://www.pichona.com.ar/assets/img/hero-persiana.jpg">
 
 <!-- Fuentes -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -39,7 +39,7 @@
   "@type": "Bakery",
   "name": "Pichona",
   "description": "Panadería y pastelería artesanal, petit fours y catering para eventos.",
-  "image": "https://www.pichona.com.ar/assets/img/local-fachada.jpg",
+  "image": "https://www.pichona.com.ar/assets/img/hero-persiana.jpg",
   "address": {
     "@type": "PostalAddress",
     "streetAddress": "Mitre 1997",
@@ -100,18 +100,33 @@
 <main id="contenido">
 
   <!-- ============================= HERO ============================= -->
+  <!-- El nombre "Pichona" ya está dibujado en la foto de la persiana:
+       no lo repetimos como texto visible para no competir con el mural.
+       El h1 queda para SEO / lectores de pantalla. -->
   <section class="hero" id="inicio">
+    <h1 class="visually-hidden">Pichona — Panadería y pastelería artesanal en José Mármol</h1>
     <div class="hero__media">
-      <img src="assets/img/local-fachada.jpg" alt="Fachada del local de Pichona en Mitre 1997, José Mármol" width="1600" height="1200">
+      <img src="assets/img/hero-persiana.jpg" alt="Persiana del local de Pichona pintada a mano con motivos de panadería y pastelería" width="1536" height="1024">
     </div>
     <div class="hero__content container">
       <p class="eyebrow">José Mármol · Zona sur del GBA</p>
-      <h1>Pichona</h1>
-      <p class="hero__tagline">Panadería y pastelería artesanal, petit fours y catering para tus eventos.</p>
+      <p class="hero__tagline">Panadería y pastelería artesanal en José Mármol.</p>
       <div class="hero__actions">
         <a href="#catalogo" class="btn btn--primary">Ver productos</a>
         <a href="https://wa.me/5491161963603?text=Hola%20Euge!%20Quer%C3%ADa%20consultar." class="btn btn--whatsapp" target="_blank" rel="noopener">Pedir por WhatsApp</a>
       </div>
+    </div>
+  </section>
+
+  <!-- ============================= GALERÍA RÁPIDA ============================= -->
+  <!-- La foto del hero es la persiana cerrada: esta tira de fotos de producto
+       entra enseguida para mostrar el local abierto y el producto fresco. -->
+  <section class="galeria-rapida container" aria-label="Algunos de nuestros productos">
+    <div class="galeria-rapida__grid">
+      <img src="assets/img/petit-fours-1.jpg" alt="Petit fours artesanales de Pichona" loading="lazy" width="900" height="900">
+      <img src="assets/img/tartitas-1.jpg" alt="Tartitas individuales de Pichona" loading="lazy" width="900" height="900">
+      <img src="assets/img/vitrina.jpg" alt="Vitrina de productos de Pichona" loading="lazy" width="1200" height="900">
+      <img src="assets/img/budines.jpg" alt="Budines artesanales de Pichona" loading="lazy" width="900" height="900">
     </div>
   </section>
 
