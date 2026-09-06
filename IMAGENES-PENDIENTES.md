@@ -2,7 +2,7 @@
 
 Todas las imágenes de `assets/img/` son **placeholders** generados automáticamente (fondo gris con el nombre de archivo y el tamaño esperado escrito encima), para que el sitio se vea completo mientras se consiguen las fotos reales. Hay que reemplazar cada una por la foto real correspondiente, **manteniendo el mismo nombre de archivo** (así no hace falta tocar `js/data.js`).
 
-**Ya resuelta:** `hero-persiana.jpg` (la persiana pintada a mano) es una foto real y no un placeholder — es la imagen de portada.
+**Ya resuelta:** `hero-euge.jpg` (ilustración estilo pizarra de Euge junto al mostrador) es una pieza real y no un placeholder — es la imagen de portada.
 
 | Archivo | Tamaño sugerido | Dónde se usa |
 |---|---|---|
