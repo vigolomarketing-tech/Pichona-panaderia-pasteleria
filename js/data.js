@@ -3,14 +3,17 @@
  * PICHONA — Panadería y Pastelería — datos del sitio
  * ============================================================================
  *
- * ESTE ES EL ÚNICO ARCHIVO QUE HAY QUE TOCAR PARA CAMBIAR PRECIOS Y PRODUCTOS.
- * No hay precios escritos en el HTML: todo el sitio lee de acá.
+ * Este era el único archivo donde vivían precios y productos. Ahora también
+ * existe un panel en /admin/ que edita precio y foto directo en una tabla
+ * de Supabase (ver sql/schema.sql y ADMIN-SETUP.md) — js/app.js prioriza
+ * esos datos en vivo cuando están disponibles, y usa este array de acá
+ * como catálogo de respaldo si Supabase no está configurado o falla la
+ * conexión. Para agregar un producto nuevo mientras el panel esté activo,
+ * hay que sumarlo también en la tabla de Supabase, no solo acá (ver el
+ * README).
  *
- * Si en el futuro esto se conecta a una base de datos (Supabase) y a un
- * panel de administración, cada producto ya tiene la forma que necesita:
- * id, nombre, precio, unidad, descripcion, categoria, imagen, destacado,
- * disponible. Ese día, en vez de leer el array PICHONA.productos de acá,
- * la página va a pedirle los mismos campos a la base de datos.
+ * Cada producto tiene la forma: id, nombre, precio, unidad, descripcion,
+ * categoria, imagen, destacado, disponible.
  *
  * Al final del archivo hay una guía para agregar o editar productos sin
  * saber programar.

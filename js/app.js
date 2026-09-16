@@ -1,6 +1,9 @@
 /**
  * Pichona — lógica del sitio.
- * Todo lo que ves acá lee los datos de js/data.js (objeto PICHONA).
+ * La mayoría de los datos (negocio, catering, testimonios, y el catálogo
+ * de arranque) viven en js/data.js (objeto PICHONA). El catálogo de
+ * productos, además, se intenta refrescar en vivo desde Supabase si el
+ * panel de administración está configurado (ver cargarProductosEnVivo).
  * No hay precios ni textos de productos hardcodeados en este archivo.
  */
 (function () {
@@ -22,6 +25,11 @@
 
   let categoriaActiva = "todas";
   let terminoBusqueda = "";
+
+  // Arranca con el catálogo fijo de data.js (así la página nunca queda en
+  // blanco esperando a la red) y, si hay un panel de Supabase configurado,
+  // lo reemplaza por los precios y fotos en vivo apenas llegan.
+  let productosActuales = PICHONA.productos;
 
   function renderTabs() {
     const todas = [{ id: "todas", nombre: "Todas" }, ...PICHONA.categorias];
@@ -72,7 +80,7 @@
 
   function renderProductos() {
     const termino = terminoBusqueda.trim().toLowerCase();
-    const filtrados = PICHONA.productos.filter((p) => {
+    const filtrados = productosActuales.filter((p) => {
       const coincideCategoria = categoriaActiva === "todas" || p.categoria === categoriaActiva;
       const coincideBusqueda = !termino || p.nombre.toLowerCase().includes(termino);
       return coincideCategoria && coincideBusqueda;
@@ -96,6 +104,35 @@
 
   renderTabs();
   renderProductos();
+
+  // ------------------------------------------------------------------
+  // PRECIOS Y FOTOS EN VIVO (Supabase) — opcional
+  //
+  // Si js/supabase-config.js tiene URL y anonKey completadas, buscamos
+  // el catálogo real en la tabla "productos" de Supabase (la misma que
+  // edita el panel de admin) y, si la respuesta llega bien, la usamos en
+  // vez de la fija de data.js. Si no está configurado, o falla la red,
+  // el sitio sigue funcionando con los datos fijos de siempre.
+  // ------------------------------------------------------------------
+  async function cargarProductosEnVivo() {
+    const config = window.SUPABASE_CONFIG;
+    if (!config || !config.url || !config.anonKey) return;
+    if (typeof window.supabase === "undefined") return;
+
+    try {
+      const sb = window.supabase.createClient(config.url, config.anonKey);
+      const { data, error } = await sb.from("productos").select("*");
+      if (error) throw error;
+      if (!data || data.length === 0) return;
+
+      productosActuales = data;
+      renderProductos();
+    } catch (err) {
+      console.warn("No se pudo cargar el catálogo en vivo de Supabase, se sigue mostrando el catálogo fijo.", err);
+    }
+  }
+
+  cargarProductosEnVivo();
 
   // ------------------------------------------------------------------
   // CATERING: combos, bocaditos, personalizados, condiciones

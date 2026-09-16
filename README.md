@@ -2,6 +2,16 @@
 
 Sitio de la panadería y pastelería **Pichona** (Mitre 1997, José Mármol). Es HTML, CSS y JavaScript puro: no hace falta instalar nada ni tener internet para abrirlo. Alcanza con hacer doble clic en `index.html` y se abre en el navegador.
 
+## Panel para cambiar precios y fotos sin tocar código
+
+Ahora existe una pantalla en `/admin/` donde, con un usuario y contraseña, podés:
+- Cambiar el precio de cualquier producto.
+- Cambiar la foto de cualquier producto (subiéndola desde el celular o la compu — se recorta sola, no hace falta editarla antes).
+
+Los cambios se ven al toque en el sitio para cualquiera que lo visite, sin que nadie tenga que tocar una línea de código. Pedile el link y la contraseña a Santiago. (Si todavía no te la dieron, es porque falta un paso técnico de configuración de su lado — mirá `ADMIN-SETUP.md` si sos vos quien tiene que hacerlo.)
+
+Todo lo que sigue de acá para abajo (editar `js/data.js` a mano) sigue funcionando igual y es útil para agregar productos nuevos, cambiar textos, horarios, o combos de catering — cosas que el panel de `/admin/` todavía no cubre.
+
 ## ¿Cómo cambio un precio?
 
 Todo lo que se ve en la página (productos, precios, combos de catering, horarios, textos) sale de **un solo archivo**: `js/data.js`. No hay ningún precio escrito en el diseño ni en ningún otro lado.
@@ -22,6 +32,8 @@ Todo lo que se ve en la página (productos, precios, combos de catering, horario
 Podés hacer lo mismo con los combos de catering (`PICHONA.catering.combos`) y con los pedidos personalizados.
 
 ## ¿Cómo agrego un producto nuevo?
+
+> **Importante si ya está configurado el panel de `/admin/`:** una vez que el panel está conectado a la base de datos, el sitio público muestra el catálogo que está en esa base, no el de `js/data.js`. Agregar un producto solo acá, en `data.js`, **no lo va a mostrar en el sitio** (los precios y fotos de los productos que ya existen sí siguen funcionando desde el panel). Para sumar un producto nuevo en ese caso, hay que agregarlo directamente en Supabase (Table Editor → tabla `productos` → Insert row) con los mismos campos que se explican abajo. Si el panel todavía no está configurado (ver `ADMIN-SETUP.md`), agregarlo acá en `data.js` funciona normalmente.
 
 1. En `js/data.js`, buscá la categoría donde va (por ejemplo, dentro del comentario `// ---------- PANADERÍA ----------`).
 2. Copiá una línea de producto que ya exista (una que empiece con `{ id:` y termine en `},`) y pegala justo debajo, dentro de la misma lista.
@@ -69,12 +81,16 @@ Mirá el archivo `IMAGENES-PENDIENTES.md` para ver qué fotos reales todavía fa
 ```
 index.html              → la página (secciones, textos fijos, estructura)
 css/styles.css          → todo el diseño (colores, tipografías, tamaños)
-js/data.js              → TODOS los productos, precios y datos del negocio
-js/app.js               → arma el catálogo, el catering y el formulario a partir de data.js
+js/data.js              → productos, precios y datos del negocio (catálogo de respaldo)
+js/app.js               → arma el catálogo, el catering y el formulario; intenta traer precios/fotos en vivo de Supabase
+js/supabase-config.js   → credenciales de conexión a Supabase (URL + clave pública)
+admin/                  → panel para cambiar precio y foto de cada producto (login + edición)
+sql/schema.sql          → script para crear la base de datos en Supabase (correr una sola vez)
 assets/img/             → fotos y favicon
 IMAGENES-PENDIENTES.md  → lista de fotos reales que faltan reemplazar
+ADMIN-SETUP.md          → instrucciones técnicas para configurar Supabase y el panel
 ```
 
 ## Nota técnica (para quien continúe el desarrollo)
 
-Los productos en `js/data.js` ya están armados con la forma `{ id, nombre, precio, unidad, descripcion, categoria, imagen, destacado, disponible }`, pensada para migrar directamente a una tabla de Supabase el día que se sume un panel de administración. El resto del sitio (`js/app.js`) solo lee ese array — el día de mañana alcanza con reemplazar la fuente de esos datos (de un array fijo a una consulta a la base) sin tocar el resto del código.
+Los productos en `js/data.js` tienen la forma `{ id, nombre, precio, unidad, descripcion, categoria, imagen, destacado, disponible }`. Esa forma ya se migró a una tabla `productos` en Supabase (ver `sql/schema.sql` y `ADMIN-SETUP.md`): `js/app.js` intenta cargar el catálogo en vivo desde ahí y, si `js/supabase-config.js` no está configurado o falla la conexión, usa el array de `data.js` como respaldo. El panel de `admin/` permite editar precio y foto de cada producto ya existente en la base; agregar productos nuevos o editar el resto de sus campos (nombre, descripción, categoría) todavía se hace a mano, directamente en la tabla de Supabase o en `data.js` según corresponda (ver la nota en "¿Cómo agrego un producto nuevo?" más arriba).

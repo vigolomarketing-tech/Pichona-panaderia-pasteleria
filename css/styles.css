@@ -723,6 +723,13 @@ a { color: var(--color-camel-dark); }
   margin-bottom: 0.2em;
 }
 .site-footer a { color: #E8C48A; }
+.site-footer__admin {
+  margin-top: 1.2em;
+  font-size: 0.8rem;
+}
+.site-footer__admin a {
+  color: #A69479;
+}
 .site-footer p { margin: 0 0 0.4em; }
 
 /* ---------------- Botón flotante de WhatsApp ---------------- */

@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Panel de Pichona</title>
+<meta name="robots" content="noindex, nofollow">
+
+<link rel="icon" type="image/png" sizes="32x32" href="../assets/img/favicon-32.png">
+<link rel="apple-touch-icon" href="../assets/img/favicon.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Jost:wght@400;500;600&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="../css/styles.css">
+<link rel="stylesheet" href="admin.css">
+</head>
+<body class="admin-body">
+
+<header class="admin-header">
+  <a href="../" class="brand">Pichona</a>
+  <span class="admin-header__titulo">Panel de administración</span>
+  <button type="button" id="btn-logout" class="btn btn--outline btn--small" hidden>Cerrar sesión</button>
+</header>
+
+<main class="admin-main container">
+
+  <!-- ============================= AVISO: SIN CONFIGURAR / SIN CONEXIÓN ============================= -->
+  <section id="vista-sin-configurar" class="admin-card" hidden>
+    <h1 id="sin-configurar-titulo">Todavía no está configurado</h1>
+    <p id="sin-configurar-texto">Falta completar <code>js/supabase-config.js</code> con los datos del proyecto de Supabase. Avisale a quien te hizo el sitio.</p>
+  </section>
+
+  <!-- ============================= LOGIN ============================= -->
+  <section id="vista-login" class="admin-card" hidden>
+    <h1>Ingresar</h1>
+    <p class="admin-card__sub">Usá el usuario y la contraseña que te dieron.</p>
+    <form id="form-login" class="admin-form" novalidate>
+      <div class="form-row">
+        <label for="login-email">Usuario (email)</label>
+        <input type="email" id="login-email" name="email" autocomplete="username" required>
+      </div>
+      <div class="form-row">
+        <label for="login-password">Contraseña</label>
+        <input type="password" id="login-password" name="password" autocomplete="current-password" required>
+      </div>
+      <p class="admin-error" id="login-error" role="alert"></p>
+      <button type="submit" class="btn btn--primary btn--full" id="btn-login">Ingresar</button>
+    </form>
+  </section>
+
+  <!-- ============================= PANEL ============================= -->
+  <section id="vista-panel" class="admin-panel" hidden>
+    <p class="admin-panel__ayuda">
+      Tocá el precio de un producto para cambiarlo y guardalo. Para cambiar una foto, tocá "Cambiar foto"
+      y elegí una imagen desde tu celular o computadora — se recorta sola para que quede prolija.
+    </p>
+
+    <div class="admin-controles">
+      <input type="search" id="admin-buscador" placeholder="Buscar un producto..." class="admin-buscador">
+      <div class="tabs" id="admin-tabs" role="tablist" aria-label="Categorías de productos"></div>
+    </div>
+
+    <p class="admin-cargando" id="admin-cargando">Cargando productos...</p>
+    <div class="admin-lista" id="admin-lista"></div>
+  </section>
+
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/supabase-config.js"></script>
+<script src="../js/data.js"></script>
+<script src="admin.js"></script>
+</body>
+</html>
