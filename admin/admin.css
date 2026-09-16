@@ -1,0 +1,198 @@
+/* ==========================================================================
+   Panel de administración de Pichona — estilos propios
+   (reutiliza los tokens de color/tipografía de css/styles.css)
+   ========================================================================== */
+
+.admin-body {
+  min-height: 100vh;
+  background: var(--color-crema);
+}
+
+.admin-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--color-borde);
+  background: var(--color-crema-alta);
+}
+.admin-header__titulo {
+  font-size: 0.92rem;
+  color: var(--color-marron-suave);
+  flex: 1;
+}
+/* La clase .btn fija "display", así que gana por sobre el [hidden] del
+   navegador si no lo reforzamos acá — sin esto, "Cerrar sesión" queda
+   visible aunque el elemento tenga el atributo hidden. */
+#btn-logout[hidden] {
+  display: none;
+}
+
+.admin-main {
+  padding: 2.5rem 1.25rem 4rem;
+}
+
+.admin-card {
+  max-width: 420px;
+  margin: 2rem auto 0;
+  background: var(--color-crema-alta);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radius);
+  padding: 2rem 1.75rem;
+}
+.admin-card h1 {
+  font-size: 1.8rem;
+  margin-bottom: 0.3em;
+}
+.admin-card__sub {
+  color: var(--color-marron-suave);
+  font-size: 0.92rem;
+}
+
+.admin-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1.25rem;
+}
+.admin-form .form-row input {
+  width: 100%;
+}
+
+.admin-error {
+  color: #B3392C;
+  font-size: 0.88rem;
+  min-height: 1.2em;
+  margin: 0;
+}
+
+/* ---------------- Panel ---------------- */
+.admin-panel__ayuda {
+  max-width: 60em;
+  color: var(--color-marron-suave);
+  font-size: 0.95rem;
+}
+
+.admin-controles {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin: 1.25rem 0 1.75rem;
+  position: sticky;
+  top: 0;
+  background: var(--color-crema);
+  padding: 0.75rem 0;
+  z-index: 10;
+}
+.admin-buscador {
+  width: 100%;
+  font-family: var(--font-cuerpo);
+  font-size: 1rem;
+  padding: 0.8em 1.1em;
+  border-radius: 999px;
+  border: 1.5px solid var(--color-borde);
+  background: #fff;
+}
+
+.admin-cargando {
+  color: var(--color-marron-suave);
+  font-style: italic;
+}
+
+.admin-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.admin-fila {
+  display: grid;
+  grid-template-columns: 88px 1fr;
+  gap: 1rem;
+  background: #fff;
+  border: 1px solid var(--color-borde);
+  border-radius: 12px;
+  padding: 1rem;
+  align-items: start;
+}
+@media (min-width: 640px) {
+  .admin-fila {
+    grid-template-columns: 96px 1fr auto;
+    align-items: center;
+  }
+}
+
+.admin-fila__foto-wrap {
+  position: relative;
+}
+.admin-fila__foto {
+  width: 88px;
+  height: 88px;
+  border-radius: 10px;
+  object-fit: cover;
+  background: var(--color-borde);
+  display: block;
+}
+@media (min-width: 640px) {
+  .admin-fila__foto { width: 96px; height: 96px; }
+}
+.admin-fila__cambiar-foto {
+  margin-top: 0.5rem;
+  font-size: 0.72rem;
+  padding: 0.4em 0.7em;
+  width: 100%;
+}
+
+.admin-fila__info h3 {
+  font-size: 1.05rem;
+  margin: 0 0 0.15em;
+}
+.admin-fila__categoria {
+  font-size: 0.78rem;
+  color: var(--color-camel-dark);
+  margin: 0 0 0.5em;
+}
+.admin-fila__precio-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.admin-fila__precio-row input[type="number"] {
+  width: 8.5em;
+  font-family: var(--font-cuerpo);
+  font-size: 1rem;
+  padding: 0.5em 0.7em;
+  border-radius: 8px;
+  border: 1.5px solid var(--color-borde);
+}
+.admin-fila__unidad {
+  color: var(--color-marron-suave);
+  font-size: 0.88rem;
+}
+.admin-fila__guardar {
+  padding: 0.5em 1.1em;
+  font-size: 0.9rem;
+}
+.admin-fila__estado {
+  font-size: 0.82rem;
+  min-height: 1.2em;
+}
+.admin-fila__estado--ok { color: #2E7D42; }
+.admin-fila__estado--error { color: #B3392C; }
+
+.admin-fila__acciones {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  grid-column: 1 / -1;
+}
+@media (min-width: 640px) {
+  .admin-fila__acciones { grid-column: auto; align-items: flex-end; }
+}
+
+.admin-vacio {
+  color: var(--color-marron-suave);
+  text-align: center;
+  padding: 2rem 0;
+}
