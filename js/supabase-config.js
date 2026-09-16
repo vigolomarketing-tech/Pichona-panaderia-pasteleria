@@ -2,7 +2,8 @@
  * Configuración de Supabase para Pichona.
  *
  * Completar los dos valores de abajo con los de tu proyecto de Supabase:
- * Dashboard → Project Settings → API → "Project URL" y "anon public" key.
+ * Dashboard → Project Settings → API → "Project URL" y "anon public" key
+ * (Supabase le renombró esta segunda a "Publishable key" — es la misma).
  *
  * Estos dos valores NO son secretos: están pensados para vivir en el
  * navegador de cualquier visitante (por eso se llaman "anon" / públicos).
@@ -17,6 +18,6 @@
  * muestra un aviso pidiendo que se completen.
  */
 window.SUPABASE_CONFIG = {
-  url: "",
-  anonKey: ""
+  url: "https://prrarkqulgfvgvdaajlo.supabase.co",
+  anonKey: "sb_publishable_PrTgdayr57GICFQiQvkHIA__muIktpU"
 };
