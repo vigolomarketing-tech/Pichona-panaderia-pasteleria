@@ -141,11 +141,17 @@
     return cat ? cat.nombre : id;
   }
 
+  function fotoSlotHTML(p) {
+    return p.imagen
+      ? `<img class="admin-fila__foto" src="${p.imagen}" alt="${p.nombre}">`
+      : `<div class="admin-fila__foto admin-fila__foto--vacia">Sin foto</div>`;
+  }
+
   function filaHTML(p) {
     return `
       <div class="admin-fila" data-id="${p.id}">
         <div class="admin-fila__foto-wrap">
-          <img class="admin-fila__foto" src="${p.imagen || ""}" alt="${p.nombre}" data-rol="foto">
+          <div class="admin-fila__foto-slot" data-rol="foto-slot">${fotoSlotHTML(p)}</div>
           <input type="file" accept="image/*" data-rol="input-foto" hidden>
           <button type="button" class="btn btn--outline admin-fila__cambiar-foto" data-rol="btn-foto">Cambiar foto</button>
         </div>
@@ -286,7 +292,7 @@
     }
 
     producto.imagen = urlPublica;
-    fila.querySelector('[data-rol="foto"]').src = urlPublica;
+    fila.querySelector('[data-rol="foto-slot"]').innerHTML = fotoSlotHTML(producto);
     setEstado(fila, "Foto actualizada ✓", "ok");
   }
 

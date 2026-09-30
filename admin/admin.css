@@ -136,6 +136,18 @@
 @media (min-width: 640px) {
   .admin-fila__foto { width: 96px; height: 96px; }
 }
+.admin-fila__foto--vacia {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 0.7rem;
+  line-height: 1.2;
+  color: var(--color-marron-suave);
+  border: 1px dashed var(--color-borde);
+  background: var(--color-crema-alta);
+  padding: 0.3rem;
+}
 .admin-fila__cambiar-foto {
   margin-top: 0.5rem;
   font-size: 0.72rem;

@@ -61,11 +61,19 @@
       ? `<a class="btn btn--whatsapp btn--small" href="${linkWhatsApp(mensaje)}" target="_blank" rel="noopener">Pedir</a>`
       : `<span class="badge-agotado">De temporada</span>`;
 
-    return `
-      <article class="producto-card${p.destacado ? " producto-card--destacado" : ""}">
-        <div class="producto-card__img">
+    // Mientras no haya una foto real cargada, no mostramos ningún espacio
+    // de imagen (ni placeholder gris): la tarjeta arranca directo con el
+    // nombre. Así se evita el ícono de imagen rota en los productos que
+    // todavía no tienen foto.
+    const fotoHTML = p.imagen
+      ? `<div class="producto-card__img">
           <img src="${p.imagen}" alt="${p.nombre}" loading="lazy" width="600" height="600">
-        </div>
+        </div>`
+      : "";
+
+    return `
+      <article class="producto-card${p.destacado ? " producto-card--destacado" : ""}${p.imagen ? "" : " producto-card--sin-foto"}">
+        ${fotoHTML}
         <div class="producto-card__body">
           ${p.destacado ? `<span class="badge-destacado">Destacado</span>` : ""}
           <h3>${p.nombre}</h3>

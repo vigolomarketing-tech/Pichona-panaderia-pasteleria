@@ -1,0 +1,26 @@
+name: Supabase keepalive
+
+# El plan free de Supabase pausa el proyecto a los 7 días sin actividad.
+# Este workflow corre cada 3 días y hace una lectura liviana contra la
+# tabla productos (ver scripts/ping-supabase.js) solo para generar
+# actividad — no usa el resultado para nada. También se puede disparar
+# a mano desde la pestaña Actions ("Run workflow") para probarlo.
+on:
+  schedule:
+    - cron: "0 6 */3 * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout del repo
+        uses: actions/checkout@v4
+
+      - name: Configurar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Ping de lectura a Supabase
+        run: node scripts/ping-supabase.js

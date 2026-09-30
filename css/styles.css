@@ -604,6 +604,9 @@ a { color: var(--color-camel-dark); }
 .producto-card--destacado {
   box-shadow: 0 0 0 2px var(--color-camel);
 }
+.producto-card--sin-foto .producto-card__body {
+  padding-top: 1.3rem;
+}
 .badge-destacado {
   display: inline-block;
   font-size: 0.72rem;
