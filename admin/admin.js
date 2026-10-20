@@ -74,6 +74,7 @@
     if (session) {
       mostrarVista("panel");
       cargarProductos();
+      cargarImagenesDelSitio();
     } else {
       mostrarVista("login");
       formLogin.reset();
@@ -141,9 +142,23 @@
     return cat ? cat.nombre : id;
   }
 
-  function fotoSlotHTML(p) {
-    return p.imagen
-      ? `<img class="admin-fila__foto" src="${p.imagen}" alt="${p.nombre}">`
+  /**
+   * Las fotos "de fábrica" que todavía no se reemplazaron desde el panel
+   * guardan una ruta relativa (ej. "assets/img/budines.jpg"), pensada para
+   * el sitio público que vive en la raíz. Esta página vive en /admin/, un
+   * nivel más adentro, así que esa misma ruta sin ajustar apunta a
+   * /admin/assets/... y rompe (ícono de imagen rota). Las URLs reales de
+   * Supabase Storage (https://...) no se tocan.
+   */
+  function rutaImagenAdmin(imagen) {
+    if (!imagen) return imagen;
+    if (/^([a-z]+:)?\/\//i.test(imagen) || imagen.startsWith("/")) return imagen;
+    return "../" + imagen;
+  }
+
+  function fotoSlotHTML(imagen, alt) {
+    return imagen
+      ? `<img class="admin-fila__foto" src="${rutaImagenAdmin(imagen)}" alt="${alt}">`
       : `<div class="admin-fila__foto admin-fila__foto--vacia">Sin foto</div>`;
   }
 
@@ -151,7 +166,7 @@
     return `
       <div class="admin-fila" data-id="${p.id}">
         <div class="admin-fila__foto-wrap">
-          <div class="admin-fila__foto-slot" data-rol="foto-slot">${fotoSlotHTML(p)}</div>
+          <div class="admin-fila__foto-slot" data-rol="foto-slot">${fotoSlotHTML(p.imagen, p.nombre)}</div>
           <input type="file" accept="image/*" data-rol="input-foto" hidden>
           <button type="button" class="btn btn--outline admin-fila__cambiar-foto" data-rol="btn-foto">Cambiar foto</button>
         </div>
@@ -292,7 +307,7 @@
     }
 
     producto.imagen = urlPublica;
-    fila.querySelector('[data-rol="foto-slot"]').innerHTML = fotoSlotHTML(producto);
+    fila.querySelector('[data-rol="foto-slot"]').innerHTML = fotoSlotHTML(producto.imagen, producto.nombre);
     setEstado(fila, "Foto actualizada ✓", "ok");
   }
 
@@ -332,5 +347,130 @@
       };
       img.src = url;
     });
+  }
+
+  // ------------------------------------------------------------------
+  // IMÁGENES DEL SITIO (decorativas, no son fotos de producto)
+  //
+  // Las 4 fotos de la galería debajo del hero (petit-fours-1, tartitas-1,
+  // vitrina, budines) viven en la tabla "site_images", con una fila fija
+  // por slot. Reutiliza el mismo mecanismo de recorte y subida que las
+  // fotos de producto, guardando en la misma tabla que lee el sitio
+  // público en vivo (ver js/app.js → cargarImagenesDelSitioEnVivo).
+  //
+  // La foto del hero (la persiana) queda afuera a propósito: no tiene
+  // fila acá ni botón — se reemplaza a mano en el código.
+  // ------------------------------------------------------------------
+  const imagenesGridEl = document.getElementById("admin-imagenes-grid");
+  let imagenesSitio = [];
+
+  async function cargarImagenesDelSitio() {
+    const { data, error } = await sb.from("site_images").select("*").order("id");
+
+    if (error) {
+      imagenesGridEl.innerHTML = `<p class="admin-vacio">No se pudieron cargar las imágenes del sitio: ${error.message}</p>`;
+      return;
+    }
+
+    imagenesSitio = data || [];
+    renderImagenesSitio();
+  }
+
+  function imagenCardHTML(fila) {
+    return `
+      <div class="admin-imagen-card" data-id="${fila.id}">
+        <div class="admin-imagen-card__foto-slot" data-rol="foto-slot">${fotoSlotHTML(fila.imagen, fila.label)}</div>
+        <div class="admin-imagen-card__info">
+          <p class="admin-imagen-card__label">${fila.label}</p>
+          <input type="file" accept="image/*" data-rol="input-foto" hidden>
+          <button type="button" class="btn btn--outline admin-fila__cambiar-foto" data-rol="btn-foto">Cambiar foto</button>
+          <p class="admin-imagen-card__estado" data-rol="estado"></p>
+        </div>
+      </div>`;
+  }
+
+  function renderImagenesSitio() {
+    if (imagenesSitio.length === 0) {
+      imagenesGridEl.innerHTML = `<p class="admin-vacio">Todavía no hay imágenes del sitio cargadas (falta correr sql/site_images.sql).</p>`;
+      return;
+    }
+
+    imagenesGridEl.innerHTML = imagenesSitio.map(imagenCardHTML).join("");
+
+    imagenesGridEl.querySelectorAll(".admin-imagen-card").forEach((card) => {
+      const id = card.dataset.id;
+      const fila = imagenesSitio.find((f) => f.id === id);
+
+      card.querySelector('[data-rol="btn-foto"]').addEventListener("click", () => {
+        card.querySelector('[data-rol="input-foto"]').click();
+      });
+      card.querySelector('[data-rol="input-foto"]').addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        if (file) cambiarImagenSitio(card, fila, file);
+        e.target.value = "";
+      });
+    });
+  }
+
+  function setEstadoImagen(card, texto, tipo) {
+    const el = card.querySelector('[data-rol="estado"]');
+    el.textContent = texto;
+    el.className = "admin-imagen-card__estado" + (tipo ? " admin-imagen-card__estado--" + tipo : "");
+  }
+
+  async function cambiarImagenSitio(card, fila, file) {
+    if (!file.type.startsWith("image/")) {
+      setEstadoImagen(card, "Elegí un archivo de imagen (JPG, PNG, etc).", "error");
+      return;
+    }
+    if (file.size > MAX_BYTES) {
+      const pesoMB = (file.size / (1024 * 1024)).toFixed(1);
+      setEstadoImagen(card, `La imagen pesa ${pesoMB} MB, el máximo es 15 MB. Elegí otra foto o bajale la calidad.`, "error");
+      return;
+    }
+
+    const btnFoto = card.querySelector('[data-rol="btn-foto"]');
+    btnFoto.disabled = true;
+    setEstadoImagen(card, "Preparando la imagen...", "");
+
+    let blob;
+    try {
+      blob = await recortarCuadrado(file, LADO_FOTO);
+    } catch (err) {
+      btnFoto.disabled = false;
+      setEstadoImagen(card, "No pudimos abrir esa imagen. Probá con otra foto (JPG o PNG).", "error");
+      return;
+    }
+
+    setEstadoImagen(card, "Subiendo foto...", "");
+
+    // Prefijo "site-" para no pisar los archivos de fotos de producto que
+    // viven en el mismo bucket.
+    const ruta = `site-${fila.id}-${Date.now()}.jpg`;
+    const { error: errorSubida } = await sb.storage
+      .from("productos-fotos")
+      .upload(ruta, blob, { contentType: "image/jpeg", upsert: true });
+
+    if (errorSubida) {
+      btnFoto.disabled = false;
+      setEstadoImagen(card, "No se pudo subir la foto: " + errorSubida.message, "error");
+      return;
+    }
+
+    const { data: urlData } = sb.storage.from("productos-fotos").getPublicUrl(ruta);
+    const urlPublica = urlData.publicUrl;
+
+    const { error: errorUpdate } = await sb.from("site_images").update({ imagen: urlPublica }).eq("id", fila.id);
+
+    btnFoto.disabled = false;
+
+    if (errorUpdate) {
+      setEstadoImagen(card, "La foto se subió pero no se pudo guardar: " + errorUpdate.message, "error");
+      return;
+    }
+
+    fila.imagen = urlPublica;
+    card.querySelector('[data-rol="foto-slot"]').innerHTML = fotoSlotHTML(fila.imagen, fila.label);
+    setEstadoImagen(card, "Foto actualizada ✓", "ok");
   }
 })();

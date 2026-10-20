@@ -4,10 +4,11 @@ Este documento es técnico, para vos. El `README.md` del repo tiene la versión 
 
 ## Qué se construyó
 
-- `admin/index.html` + `admin/admin.css` + `admin/admin.js` — el panel: login (Supabase Auth) + edición de precio y foto de cada producto.
+- `admin/index.html` + `admin/admin.css` + `admin/admin.js` — el panel: login (Supabase Auth) + edición de precio y foto de cada producto + edición de las 4 imágenes decorativas del sitio (sección "Imágenes del sitio").
 - `js/supabase-config.js` — el único archivo con las credenciales de conexión (hoy vacío, hay que completarlo).
 - `sql/schema.sql` — crea la tabla `productos`, las políticas de seguridad (RLS), el bucket de fotos y carga los 64 productos que ya estaban en `js/data.js` con sus precios y fotos actuales.
-- `js/app.js` — el sitio público ahora intenta traer el catálogo en vivo desde Supabase; si `supabase-config.js` está vacío o falla la conexión, sigue mostrando el catálogo fijo de `js/data.js` como hasta ahora (no rompe nada si todavía no hiciste este setup).
+- `sql/site_images.sql` — migración nueva: crea la tabla `site_images` (4 filas fijas, una por imagen decorativa) con sus políticas RLS. Reutiliza el bucket `productos-fotos` que ya existe.
+- `js/app.js` — el sitio público ahora intenta traer el catálogo y las imágenes decorativas en vivo desde Supabase; si `supabase-config.js` está vacío o falla la conexión, sigue mostrando los datos fijos de siempre (no rompe nada si todavía no hiciste este setup).
 
 **No creé ningún proyecto de Supabase** — no tengo forma de acceder a una cuenta de Supabase tuya, así que ese paso es tuyo. Tampoco toqué `js/data.js` ni el resto del sitio salvo lo necesario para conectar esto (agregar el script de Supabase en `index.html` y el link a `/admin/` en el footer).
 
@@ -42,6 +43,19 @@ Este documento es técnico, para vos. El `README.md` del repo tiene la versión 
 
 Este script es seguro de correr una sola vez; si lo corrés de nuevo no duplica los productos (usa `on conflict (id) do nothing`), pero si ya hiciste cambios de precios desde el panel, correrlo de nuevo **no los pisa** tampoco, porque el `insert` solo actúa si el `id` no existe todavía.
 
+## Paso 3bis — Imágenes decorativas del sitio (migración nueva)
+
+Además de las fotos de producto, el panel ahora también deja cambiar 4 imágenes decorativas del diseño (la galería que aparece debajo del hero: petit fours, tartitas, vitrina, budines — no son fotos de ningún producto puntual del catálogo). Esto vive en una tabla nueva, separada de `productos`.
+
+1. En el dashboard: **SQL Editor → New query**.
+2. Abrí el archivo `sql/site_images.sql` de este repo (es un archivo nuevo, distinto de `schema.sql`), copiá **todo** su contenido, y pegalo en el editor.
+3. Click en **Run**.
+4. Si salió bien, deberías ver una tabla `site_images` con 4 filas en **Table Editor**. No hace falta crear ningún bucket nuevo: reutiliza el mismo `productos-fotos` que ya existe.
+
+También es seguro correrlo de nuevo si hiciera falta (mismo criterio de `on conflict (id) do nothing`).
+
+**La foto del hero (la persiana) queda afuera de todo esto a propósito** — no tiene fila en ninguna tabla ni botón en el panel. Si en algún momento la clienta quiere cambiarla, te la van a mandar a vos para que la reemplaces a mano en el código, como hasta ahora.
+
 ## Paso 4 — Crear el usuario de Euge
 
 Vos das de alta el usuario desde el dashboard — no hace falta tocar código para esto, y es la forma más segura (evita tener que exponer nada en el sitio para que alguien se registre solo):
@@ -65,8 +79,9 @@ Los cambios de `js/supabase-config.js` (con las credenciales reales) tienen que 
 4. Deberías ver la lista completa del catálogo, con tabs por categoría y buscador.
 5. Cambiá el precio de un producto de prueba y tocá "Guardar precio" → tiene que aparecer "Precio guardado ✓".
 6. Subí una foto de prueba con "Cambiar foto" (desde el celular o la compu) → tiene que aparecer "Foto actualizada ✓" y el thumbnail se actualiza al toque.
-7. Abrí el sitio público (`/index.html` o la home) en otra pestaña o en el celular, **recargá la página**, y confirmá que el precio/foto que cambiaste en el panel ya se ve ahí. Esa es la prueba de que quedó todo conectado de punta a punta.
-8. Cerrá sesión con el botón del panel y confirmá que vuelve a pedir login.
+7. Más abajo en el panel, probá lo mismo en la sección "Imágenes del sitio" (las 4 fotos decorativas) — mismo botón "Cambiar foto", mismo resultado.
+8. Abrí el sitio público (`/index.html` o la home) en otra pestaña o en el celular, **recargá la página**, y confirmá que el precio/foto que cambiaste en el panel ya se ve ahí (tanto el producto de prueba como la foto decorativa). Esa es la prueba de que quedó todo conectado de punta a punta.
+9. Cerrá sesión con el botón del panel y confirmá que vuelve a pedir login.
 
 Si algo de esto no pasa, lo más probable es un typo en `js/supabase-config.js` o que el script SQL no se haya corrido — no hace falta tocar nada más del código.
 

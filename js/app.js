@@ -122,13 +122,18 @@
   // vez de la fija de data.js. Si no está configurado, o falla la red,
   // el sitio sigue funcionando con los datos fijos de siempre.
   // ------------------------------------------------------------------
-  async function cargarProductosEnVivo() {
+  function crearClienteSupabase() {
     const config = window.SUPABASE_CONFIG;
-    if (!config || !config.url || !config.anonKey) return;
-    if (typeof window.supabase === "undefined") return;
+    if (!config || !config.url || !config.anonKey) return null;
+    if (typeof window.supabase === "undefined") return null;
+    return window.supabase.createClient(config.url, config.anonKey);
+  }
+
+  async function cargarProductosEnVivo() {
+    const sb = crearClienteSupabase();
+    if (!sb) return;
 
     try {
-      const sb = window.supabase.createClient(config.url, config.anonKey);
       const { data, error } = await sb.from("productos").select("*");
       if (error) throw error;
       if (!data || data.length === 0) return;
@@ -141,6 +146,42 @@
   }
 
   cargarProductosEnVivo();
+
+  // ------------------------------------------------------------------
+  // IMÁGENES DEL SITIO EN VIVO (Supabase) — opcional
+  //
+  // Las 4 fotos decorativas de la galería debajo del hero (petit-fours-1,
+  // tartitas-1, vitrina, budines) no son fotos de producto: viven en la
+  // tabla "site_images" de Supabase para que se puedan reemplazar desde
+  // el panel sin tocar código. Igual que con el catálogo, si no está
+  // configurado o falla la red, se siguen mostrando los archivos fijos
+  // de assets/img/ que ya trae el HTML.
+  // ------------------------------------------------------------------
+  async function cargarImagenesDelSitioEnVivo() {
+    const sb = crearClienteSupabase();
+    if (!sb) return;
+
+    const imgs = document.querySelectorAll("[data-site-image]");
+    if (imgs.length === 0) return;
+
+    try {
+      const { data, error } = await sb.from("site_images").select("*");
+      if (error) throw error;
+      if (!data) return;
+
+      const porId = {};
+      data.forEach((fila) => { porId[fila.id] = fila; });
+
+      imgs.forEach((img) => {
+        const fila = porId[img.dataset.siteImage];
+        if (fila && fila.imagen) img.src = fila.imagen;
+      });
+    } catch (err) {
+      console.warn("No se pudieron cargar las imágenes del sitio en vivo de Supabase, se siguen mostrando las fijas.", err);
+    }
+  }
+
+  cargarImagenesDelSitioEnVivo();
 
   // ------------------------------------------------------------------
   // CATERING: combos, bocaditos, personalizados, condiciones
