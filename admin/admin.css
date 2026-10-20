@@ -208,3 +208,55 @@
   text-align: center;
   padding: 2rem 0;
 }
+
+/* ---------------- Imágenes del sitio ---------------- */
+.admin-sitio-imagenes {
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--color-borde);
+}
+.admin-sitio-imagenes h2 {
+  font-size: 1.5rem;
+  margin-bottom: 0.3em;
+}
+.admin-imagenes-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  margin-top: 1.25rem;
+}
+@media (min-width: 640px) {
+  .admin-imagenes-grid { grid-template-columns: repeat(2, 1fr); }
+}
+.admin-imagen-card {
+  background: #fff;
+  border: 1px solid var(--color-borde);
+  border-radius: 12px;
+  padding: 1rem;
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+.admin-imagen-card__foto-slot img,
+.admin-imagen-card__foto-slot .admin-fila__foto--vacia {
+  width: 84px;
+  height: 84px;
+  border-radius: 10px;
+  object-fit: cover;
+  display: block;
+}
+.admin-imagen-card__info {
+  flex: 1;
+  min-width: 0;
+}
+.admin-imagen-card__label {
+  font-weight: 500;
+  margin: 0 0 0.5em;
+}
+.admin-imagen-card__estado {
+  font-size: 0.82rem;
+  min-height: 1.2em;
+  margin: 0.4em 0 0;
+}
+.admin-imagen-card__estado--ok { color: #2E7D42; }
+.admin-imagen-card__estado--error { color: #B3392C; }

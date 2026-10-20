@@ -236,6 +236,12 @@ a { color: var(--color-camel-dark); }
   gap: 0.9rem;
   margin-top: 1.5rem;
 }
+.hero__actions .btn {
+  /* "Pedir por WhatsApp" es más largo que "Ver productos" y por el
+     padding parejo del botón quedaba visiblemente más chico — igualamos
+     el ancho mínimo para que pesen lo mismo. */
+  min-width: 210px;
+}
 
 /* ---------------- Galería rápida (debajo del hero) ---------------- */
 .galeria-rapida {

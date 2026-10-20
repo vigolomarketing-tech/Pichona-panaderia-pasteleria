@@ -4,6 +4,8 @@ Todas las imágenes de `assets/img/` son **placeholders** generados automáticam
 
 **Ya resuelta:** `hero-persiana.jpg` (la persiana pintada a mano) es una foto real y no un placeholder — es la imagen de portada.
 
+**Nota:** `petit-fours-1.jpg`, `tartitas-1.jpg`, `vitrina.jpg` y `budines.jpg`, en su uso como fotos de la **galería debajo del hero**, ya se pueden reemplazar directo desde `/admin/` → sección "Imágenes del sitio" (una vez que esté corrido `sql/site_images.sql`), sin tocar archivos. Esos mismos nombres de archivo también se usan como foto de algunos productos del catálogo (ver tabla abajo) — eso es un uso aparte, que se reemplaza desde la sección de productos del panel, no desde "Imágenes del sitio".
+
 | Archivo | Tamaño sugerido | Dónde se usa |
 |---|---|---|
 | `petit-fours-1.jpg` | 900 × 900 px | Galería debajo del hero y catálogo — Petit fours |

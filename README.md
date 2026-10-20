@@ -7,8 +7,11 @@ Sitio de la panadería y pastelería **Pichona** (Mitre 1997, José Mármol). Es
 Ahora existe una pantalla en `/admin/` donde, con un usuario y contraseña, podés:
 - Cambiar el precio de cualquier producto.
 - Cambiar la foto de cualquier producto (subiéndola desde el celular o la compu — se recorta sola, no hace falta editarla antes).
+- Cambiar las 4 fotos decorativas del sitio (la galería debajo de la foto de portada), en la sección "Imágenes del sitio" del mismo panel.
 
 Los cambios se ven al toque en el sitio para cualquiera que lo visite, sin que nadie tenga que tocar una línea de código. Pedile el link y la contraseña a Santiago. (Si todavía no te la dieron, es porque falta un paso técnico de configuración de su lado — mirá `ADMIN-SETUP.md` si sos vos quien tiene que hacerlo.)
+
+La foto grande de portada (la persiana) no se cambia desde el panel — si alguna vez quieren reemplazarla, mandale la foto nueva a Santiago.
 
 Todo lo que sigue de acá para abajo (editar `js/data.js` a mano) sigue funcionando igual y es útil para agregar productos nuevos, cambiar textos, horarios, o combos de catering — cosas que el panel de `/admin/` todavía no cubre.
 
