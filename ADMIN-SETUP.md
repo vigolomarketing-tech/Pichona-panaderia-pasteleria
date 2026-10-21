@@ -4,11 +4,12 @@ Este documento es técnico, para vos. El `README.md` del repo tiene la versión 
 
 ## Qué se construyó
 
-- `admin/index.html` + `admin/admin.css` + `admin/admin.js` — el panel: login (Supabase Auth) + edición de precio y foto de cada producto + edición de las 4 imágenes decorativas del sitio (sección "Imágenes del sitio").
+- `admin/index.html` + `admin/admin.css` + `admin/admin.js` — el panel: login (Supabase Auth) + edición de precio y foto de cada producto + edición de las 7 imágenes decorativas del sitio (sección "Imágenes del sitio": 4 de la galería + 3 de catering).
 - `js/supabase-config.js` — el único archivo con las credenciales de conexión (hoy vacío, hay que completarlo).
 - `sql/schema.sql` — crea la tabla `productos`, las políticas de seguridad (RLS), el bucket de fotos y carga los 64 productos que ya estaban en `js/data.js` con sus precios y fotos actuales.
-- `sql/site_images.sql` — migración nueva: crea la tabla `site_images` (4 filas fijas, una por imagen decorativa) con sus políticas RLS. Reutiliza el bucket `productos-fotos` que ya existe.
-- `js/app.js` — el sitio público ahora intenta traer el catálogo y las imágenes decorativas en vivo desde Supabase; si `supabase-config.js` está vacío o falla la conexión, sigue mostrando los datos fijos de siempre (no rompe nada si todavía no hiciste este setup).
+- `sql/site_images.sql` — migración: crea la tabla `site_images` (4 filas fijas, una por imagen decorativa de la galería) con sus políticas RLS. Reutiliza el bucket `productos-fotos` que ya existe.
+- `sql/catering_images.sql` — migración nueva: agrega 3 filas más a `site_images` para las fotos de catering, y las columnas de proporción (`aspecto_ancho`/`aspecto_alto`) que necesitan por ser rectangulares.
+- `js/app.js` — el sitio público ahora intenta traer el catálogo y las imágenes decorativas (galería y catering) en vivo desde Supabase; si `supabase-config.js` está vacío o falla la conexión, sigue mostrando los datos fijos de siempre (no rompe nada si todavía no hiciste este setup).
 
 **No creé ningún proyecto de Supabase** — no tengo forma de acceder a una cuenta de Supabase tuya, así que ese paso es tuyo. Tampoco toqué `js/data.js` ni el resto del sitio salvo lo necesario para conectar esto (agregar el script de Supabase en `index.html` y el link a `/admin/` en el footer).
 
@@ -56,6 +57,17 @@ También es seguro correrlo de nuevo si hiciera falta (mismo criterio de `on con
 
 **La foto del hero (la persiana) queda afuera de todo esto a propósito** — no tiene fila en ninguna tabla ni botón en el panel. Si en algún momento la clienta quiere cambiarla, te la van a mandar a vos para que la reemplaces a mano en el código, como hasta ahora.
 
+## Paso 3ter — Imágenes de catering (migración nueva)
+
+Las fotos de los combos de catering (Lunch Box 20 personas, Caja de 30 bocaditos, Un toque gourmet, Mesa dulce) también eran placeholders sin editor — ahora se suman a la misma tabla `site_images` del paso anterior, como 3 filas más (Lunch Box y Un toque gourmet comparten la misma foto de fábrica, así que comparten también la misma fila: subir una foto nueva ahí actualiza las dos tarjetas de catering juntas).
+
+1. En el dashboard: **SQL Editor → New query**.
+2. Abrí el archivo `sql/catering_images.sql` de este repo, copiá **todo** su contenido, y pegalo en el editor.
+3. Click en **Run**. (Agrega dos columnas a `site_images` para que el panel sepa recortar cada imagen con la proporción correcta — las fotos de catering son rectangulares 4:3, no cuadradas como las de la galería — y carga las 3 filas nuevas.)
+4. Si salió bien, la tabla `site_images` pasa a tener 7 filas en **Table Editor**, y en el panel aparecen 3 tarjetas más en "Imágenes del sitio".
+
+También es seguro correrlo de nuevo si hiciera falta.
+
 ## Paso 4 — Crear el usuario de Euge
 
 Vos das de alta el usuario desde el dashboard — no hace falta tocar código para esto, y es la forma más segura (evita tener que exponer nada en el sitio para que alguien se registre solo):
@@ -79,7 +91,7 @@ Los cambios de `js/supabase-config.js` (con las credenciales reales) tienen que 
 4. Deberías ver la lista completa del catálogo, con tabs por categoría y buscador.
 5. Cambiá el precio de un producto de prueba y tocá "Guardar precio" → tiene que aparecer "Precio guardado ✓".
 6. Subí una foto de prueba con "Cambiar foto" (desde el celular o la compu) → tiene que aparecer "Foto actualizada ✓" y el thumbnail se actualiza al toque.
-7. Más abajo en el panel, probá lo mismo en la sección "Imágenes del sitio" (las 4 fotos decorativas) — mismo botón "Cambiar foto", mismo resultado.
+7. Más abajo en el panel, probá lo mismo en la sección "Imágenes del sitio" (7 tarjetas: 4 de la galería + 3 de catering) — mismo botón "Cambiar foto", mismo resultado. Probá puntualmente con "Catering — Bocaditos fríos" y confirmá que al recargar el sitio se actualizan juntas las tarjetas de "Lunch Box 20 personas" y "Un toque gourmet" (comparten la misma foto a propósito).
 8. Abrí el sitio público (`/index.html` o la home) en otra pestaña o en el celular, **recargá la página**, y confirmá que el precio/foto que cambiaste en el panel ya se ve ahí (tanto el producto de prueba como la foto decorativa). Esa es la prueba de que quedó todo conectado de punta a punta.
 9. Cerrá sesión con el botón del panel y confirmá que vuelve a pedir login.
 

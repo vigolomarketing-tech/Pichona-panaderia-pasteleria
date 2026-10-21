@@ -156,10 +156,11 @@
     return "../" + imagen;
   }
 
-  function fotoSlotHTML(imagen, alt) {
+  function fotoSlotHTML(imagen, alt, aspecto) {
+    const estilo = ` style="aspect-ratio:${aspecto || "1 / 1"};"`;
     return imagen
-      ? `<img class="admin-fila__foto" src="${rutaImagenAdmin(imagen)}" alt="${alt}">`
-      : `<div class="admin-fila__foto admin-fila__foto--vacia">Sin foto</div>`;
+      ? `<img class="admin-fila__foto" src="${rutaImagenAdmin(imagen)}" alt="${alt}"${estilo}>`
+      : `<div class="admin-fila__foto admin-fila__foto--vacia"${estilo}>Sin foto</div>`;
   }
 
   function filaHTML(p) {
@@ -312,28 +313,49 @@
   }
 
   /**
-   * Recorta el centro de la imagen en un cuadrado y la reduce a `lado`
-   * píxeles, devolviendo un Blob JPEG — así todas las fotos de producto
-   * quedan con la misma proporción (1:1) que usa la grilla del catálogo,
-   * sin importar la foto que suba la dueña desde el celular.
+   * Recorta el centro de la imagen a la proporción `aspectoAncho:aspectoAlto`
+   * y la reduce para que su lado mayor no supere `ladoMaximo`, devolviendo
+   * un Blob JPEG. Así la foto que suba la dueña desde el celular siempre
+   * queda con la misma proporción que el espacio donde se va a mostrar
+   * (1:1 para la grilla del catálogo y la galería, 4:3 para las tarjetas
+   * de catering), sin que el navegador tenga que recortarla de nuevo.
    */
-  function recortarCuadrado(file, lado) {
+  function recortarImagen(file, aspectoAncho, aspectoAlto, ladoMaximo) {
     return new Promise((resolve, reject) => {
       const img = new Image();
       const url = URL.createObjectURL(file);
 
       img.onload = () => {
         URL.revokeObjectURL(url);
-        const origen = Math.min(img.naturalWidth, img.naturalHeight);
-        const sx = (img.naturalWidth - origen) / 2;
-        const sy = (img.naturalHeight - origen) / 2;
-        const destino = Math.min(lado, origen);
+
+        const relacionDestino = aspectoAncho / aspectoAlto;
+        const relacionOrigen = img.naturalWidth / img.naturalHeight;
+
+        let sw, sh;
+        if (relacionOrigen > relacionDestino) {
+          sh = img.naturalHeight;
+          sw = sh * relacionDestino;
+        } else {
+          sw = img.naturalWidth;
+          sh = sw / relacionDestino;
+        }
+        const sx = (img.naturalWidth - sw) / 2;
+        const sy = (img.naturalHeight - sh) / 2;
+
+        let destW = sw;
+        let destH = sh;
+        const mayor = Math.max(destW, destH);
+        if (mayor > ladoMaximo) {
+          const escala = ladoMaximo / mayor;
+          destW = Math.round(destW * escala);
+          destH = Math.round(destH * escala);
+        }
 
         const canvas = document.createElement("canvas");
-        canvas.width = destino;
-        canvas.height = destino;
+        canvas.width = destW;
+        canvas.height = destH;
         const ctx = canvas.getContext("2d");
-        ctx.drawImage(img, sx, sy, origen, origen, 0, 0, destino, destino);
+        ctx.drawImage(img, sx, sy, sw, sh, 0, 0, destW, destH);
 
         canvas.toBlob(
           (blob) => (blob ? resolve(blob) : reject(new Error("toBlob devolvió vacío"))),
@@ -347,6 +369,10 @@
       };
       img.src = url;
     });
+  }
+
+  function recortarCuadrado(file, lado) {
+    return recortarImagen(file, 1, 1, lado);
   }
 
   // ------------------------------------------------------------------
@@ -376,10 +402,14 @@
     renderImagenesSitio();
   }
 
+  function aspectoCSS(fila) {
+    return `${fila.aspecto_ancho || 1} / ${fila.aspecto_alto || 1}`;
+  }
+
   function imagenCardHTML(fila) {
     return `
       <div class="admin-imagen-card" data-id="${fila.id}">
-        <div class="admin-imagen-card__foto-slot" data-rol="foto-slot">${fotoSlotHTML(fila.imagen, fila.label)}</div>
+        <div class="admin-imagen-card__foto-slot" data-rol="foto-slot">${fotoSlotHTML(fila.imagen, fila.label, aspectoCSS(fila))}</div>
         <div class="admin-imagen-card__info">
           <p class="admin-imagen-card__label">${fila.label}</p>
           <input type="file" accept="image/*" data-rol="input-foto" hidden>
@@ -435,7 +465,7 @@
 
     let blob;
     try {
-      blob = await recortarCuadrado(file, LADO_FOTO);
+      blob = await recortarImagen(file, fila.aspecto_ancho || 1, fila.aspecto_alto || 1, LADO_FOTO);
     } catch (err) {
       btnFoto.disabled = false;
       setEstadoImagen(card, "No pudimos abrir esa imagen. Probá con otra foto (JPG o PNG).", "error");
@@ -470,7 +500,7 @@
     }
 
     fila.imagen = urlPublica;
-    card.querySelector('[data-rol="foto-slot"]').innerHTML = fotoSlotHTML(fila.imagen, fila.label);
+    card.querySelector('[data-rol="foto-slot"]').innerHTML = fotoSlotHTML(fila.imagen, fila.label, aspectoCSS(fila));
     setEstadoImagen(card, "Foto actualizada ✓", "ok");
   }
 })();

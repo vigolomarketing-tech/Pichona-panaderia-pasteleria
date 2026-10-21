@@ -16,6 +16,27 @@
     `${PICHONA.negocio.whatsapp}?text=${encodeURIComponent(mensaje)}`;
 
   // ------------------------------------------------------------------
+  // MENÚ MOBILE (hamburguesa) — reusa el mismo <nav> de siempre, solo
+  // lo muestra/oculta como dropdown por debajo de 780px.
+  // ------------------------------------------------------------------
+  const navToggle = document.getElementById("nav-toggle");
+  const mainNav = document.getElementById("main-nav");
+
+  function cerrarMenu() {
+    mainNav.classList.remove("is-open");
+    navToggle.setAttribute("aria-expanded", "false");
+    navToggle.textContent = "☰";
+  }
+
+  navToggle.addEventListener("click", () => {
+    const abierto = mainNav.classList.toggle("is-open");
+    navToggle.setAttribute("aria-expanded", String(abierto));
+    navToggle.textContent = abierto ? "✕" : "☰";
+  });
+
+  mainNav.querySelectorAll("a").forEach((a) => a.addEventListener("click", cerrarMenu));
+
+  // ------------------------------------------------------------------
   // CATÁLOGO: tabs, buscador y grilla
   // ------------------------------------------------------------------
   const gridProductos = document.getElementById("grid-productos");
@@ -161,13 +182,18 @@
     const sb = crearClienteSupabase();
     if (!sb) return;
 
-    const imgs = document.querySelectorAll("[data-site-image]");
-    if (imgs.length === 0) return;
-
     try {
       const { data, error } = await sb.from("site_images").select("*");
       if (error) throw error;
       if (!data) return;
+
+      // Se buscan los elementos recién acá (después del await) y no antes,
+      // porque algunos — como las fotos de los combos de catering — todavía
+      // no existen en el DOM en este punto del script: se arman más abajo,
+      // de forma síncrona, y para cuando esta consulta a Supabase resuelve
+      // ya terminaron de renderizarse.
+      const imgs = document.querySelectorAll("[data-site-image]");
+      if (imgs.length === 0) return;
 
       const porId = {};
       data.forEach((fila) => { porId[fila.id] = fila; });
@@ -188,6 +214,16 @@
   // ------------------------------------------------------------------
   document.getElementById("catering-intro").textContent = PICHONA.catering.intro;
 
+  // El nombre de archivo (sin carpeta ni extensión) de la foto de cada
+  // combo es, a la vez, el id de su fila en "site_images" — así, si dos
+  // combos comparten la misma foto de fábrica (como Lunch Box y Un toque
+  // gourmet, que todavía comparten bocaditos-frios.jpg), compartir el id
+  // es automático y no hay que mantener un mapeo aparte.
+  function idImagenDesdeRuta(ruta) {
+    const match = /([^/]+)\.[a-z0-9]+$/i.exec(ruta || "");
+    return match ? match[1] : null;
+  }
+
   document.getElementById("catering-combos").innerHTML = PICHONA.catering.combos
     .map((c) => {
       const precioHTML = c.precio == null
@@ -196,7 +232,7 @@
       return `
       <article class="combo-card${c.destacado ? " combo-card--destacado" : ""}">
         <div class="combo-card__img">
-          <img src="${c.imagen}" alt="${c.nombre}" loading="lazy" width="600" height="450">
+          <img src="${c.imagen}" alt="${c.nombre}" loading="lazy" width="600" height="450" data-site-image="${idImagenDesdeRuta(c.imagen)}">
         </div>
         <div class="combo-card__body">
           <h3>${c.nombre}</h3>

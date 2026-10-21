@@ -239,8 +239,8 @@
 }
 .admin-imagen-card__foto-slot img,
 .admin-imagen-card__foto-slot .admin-fila__foto--vacia {
-  width: 84px;
-  height: 84px;
+  width: 104px;
+  height: auto;
   border-radius: 10px;
   object-fit: cover;
   display: block;

@@ -86,14 +86,17 @@
 <header class="site-header">
   <div class="container site-header__inner">
     <a href="#inicio" class="brand">Pichona</a>
-    <nav class="main-nav" aria-label="Navegación principal">
+    <nav class="main-nav" id="main-nav" aria-label="Navegación principal">
       <a href="#catalogo">Catálogo</a>
       <a href="#catering" class="main-nav__catering">Catering</a>
       <a href="#ubicacion">Dónde estamos</a>
     </nav>
-    <a class="btn btn--whatsapp btn--small" href="https://wa.me/5491161963603?text=Hola%20Euge!%20Quer%C3%ADa%20consultar." target="_blank" rel="noopener">
-      WhatsApp
-    </a>
+    <div class="site-header__acciones">
+      <button type="button" class="nav-toggle" id="nav-toggle" aria-expanded="false" aria-controls="main-nav" aria-label="Abrir menú">☰</button>
+      <a class="btn btn--whatsapp btn--small" href="https://wa.me/5491161963603?text=Hola%20Euge!%20Quer%C3%ADa%20consultar." target="_blank" rel="noopener">
+        WhatsApp
+      </a>
+    </div>
   </div>
 </header>
 
