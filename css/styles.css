@@ -183,6 +183,50 @@ a { color: var(--color-camel-dark); }
   .main-nav { display: flex; }
 }
 
+.site-header__acciones {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+/* Menú hamburguesa: el <nav> de arriba (mismos 3 links) se reusa tal
+   cual como dropdown en mobile, en vez de armar una navegación aparte. */
+.nav-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 1.5px solid var(--color-borde);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--color-marron);
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+}
+@media (min-width: 780px) {
+  .nav-toggle { display: none; }
+}
+@media (max-width: 779.98px) {
+  .main-nav.is-open {
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    gap: 0;
+    background: var(--color-crema-alta);
+    border-bottom: 1px solid var(--color-borde);
+    box-shadow: 0 12px 24px -14px rgba(59, 42, 30, 0.35);
+  }
+  .main-nav.is-open a {
+    padding: 1rem 1.25rem;
+    border-top: 1px solid var(--color-borde);
+  }
+}
+
 /* ---------------- Hero ---------------- */
 /* La foto es la persiana de Pichona pintada a mano — el nombre ya está
    dibujado ahí, así que el degradé solo oscurece el tercio inferior

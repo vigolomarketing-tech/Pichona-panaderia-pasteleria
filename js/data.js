@@ -53,7 +53,7 @@ const PICHONA = {
   categorias: [
     { id: "panaderia", nombre: "Panadería" },
     { id: "pasteleria", nombre: "Pastelería" },
-    { id: "petit-fours-tartitas", nombre: "Petit fours y tartitas" },
+    { id: "petit-fours-tartitas", nombre: "Petit fours y catering" },
     { id: "salados", nombre: "Salados" },
     { id: "almacen", nombre: "Almacén" }
   ],
