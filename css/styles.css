@@ -287,6 +287,30 @@ a { color: var(--color-camel-dark); }
   min-width: 210px;
 }
 
+/* Accesos secundarios del hero (Catering / Dónde estamos) — solo en
+   mobile, que es donde el nav del header queda oculto. Más discretos
+   que los botones principales a propósito: son un atajo, no la acción
+   que se espera que tome la mayoría. */
+.hero__nav-secundaria {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.5rem;
+  margin-top: 1.1rem;
+}
+.hero__nav-secundaria a {
+  color: #EBD9BC;
+  font-size: 0.92rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: rgba(235, 217, 188, 0.55);
+}
+.hero__nav-secundaria a:hover {
+  text-decoration-color: #EBD9BC;
+}
+@media (min-width: 780px) {
+  .hero__nav-secundaria { display: none; }
+}
+
 /* ---------------- Galería rápida (debajo del hero) ---------------- */
 .galeria-rapida {
   padding: 0.9rem 1.25rem;
@@ -587,6 +611,17 @@ a { color: var(--color-camel-dark); }
   border-color: var(--color-camel);
   color: #fff;
   font-weight: 500;
+}
+
+/* Botón de atajo (ej. "↓ Catering" en el panel admin): no filtra nada,
+   solo lleva a otra parte de la pantalla — por eso se distingue del
+   resto de las pastillas con un borde punteado en vez de sólido. */
+.tab-btn--atajo {
+  border-style: dashed;
+  color: var(--color-camel-dark);
+}
+.tab-btn--atajo:hover {
+  background: var(--color-crema);
 }
 
 .catalogo__vacio {

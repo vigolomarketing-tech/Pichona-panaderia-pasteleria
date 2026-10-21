@@ -114,7 +114,7 @@
 
   function renderTabs() {
     const todas = [{ id: "todas", nombre: "Todas" }, ...(typeof PICHONA !== "undefined" ? PICHONA.categorias : [])];
-    tabsEl.innerHTML = todas
+    const botonesFiltro = todas
       .map(
         (cat) => `
         <button type="button" class="tab-btn" role="tab"
@@ -123,13 +123,31 @@
       )
       .join("");
 
-    tabsEl.querySelectorAll(".tab-btn").forEach((btn) => {
+    // No es un filtro de productos — es un atajo para no tener que
+    // scrollear toda la lista hasta llegar a las tarjetas de catering
+    // dentro de "Imágenes del sitio". Por eso va aparte y con estilo
+    // propio (no participa de aria-selected ni de categoriaActiva).
+    const botonAtajo = `
+        <button type="button" class="tab-btn tab-btn--atajo" data-rol="atajo-catering">↓ Catering</button>`;
+
+    tabsEl.innerHTML = botonesFiltro + botonAtajo;
+
+    tabsEl.querySelectorAll(".tab-btn[data-categoria]").forEach((btn) => {
       btn.addEventListener("click", () => {
         categoriaActiva = btn.dataset.categoria;
         renderTabs();
         renderLista();
       });
     });
+
+    const btnAtajo = tabsEl.querySelector('[data-rol="atajo-catering"]');
+    if (btnAtajo) btnAtajo.addEventListener("click", irASeccionCatering);
+  }
+
+  function irASeccionCatering() {
+    const primeraTarjetaCatering = imagenesGridEl.querySelector('.admin-imagen-card[data-grupo="catering"]');
+    const destino = primeraTarjetaCatering || document.querySelector(".admin-sitio-imagenes");
+    if (destino) destino.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   buscadorEl.addEventListener("input", (e) => {
@@ -407,8 +425,9 @@
   }
 
   function imagenCardHTML(fila) {
+    const grupo = fila.label && fila.label.startsWith("Catering") ? "catering" : "galeria";
     return `
-      <div class="admin-imagen-card" data-id="${fila.id}">
+      <div class="admin-imagen-card" data-id="${fila.id}" data-grupo="${grupo}">
         <div class="admin-imagen-card__foto-slot" data-rol="foto-slot">${fotoSlotHTML(fila.imagen, fila.label, aspectoCSS(fila))}</div>
         <div class="admin-imagen-card__info">
           <p class="admin-imagen-card__label">${fila.label}</p>
