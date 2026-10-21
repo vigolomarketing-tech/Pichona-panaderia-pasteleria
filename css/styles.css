@@ -844,3 +844,8 @@ a { color: var(--color-camel-dark); }
   .hero__content { padding-bottom: 2.5rem; }
   .catalogo__controles { top: 56px; }
 }
+
+/* Los <link>/<script> que referencian este archivo llevan un query
+   string "?v=<sha>" agregado automáticamente en cada deploy (ver
+   .github/workflows/cache-bust.yml) para que navegadores y el CDN de
+   GitHub Pages no sirvan una copia vieja cacheada de este CSS. */
