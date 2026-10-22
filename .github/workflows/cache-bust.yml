@@ -15,10 +15,7 @@ name: Cache-bust estáticos
 
 on:
   push:
-    # TEMP-TEST: se agrega la rama de feature acá solo para validar el
-    # mecanismo real (incluido el push de vuelta) antes de confiar en
-    # él. Se saca en el siguiente commit, dejando solo [main].
-    branches: [main, "claude/pichona-bakery-website-teczdm"]
+    branches: [main]
     paths:
       - "index.html"
       - "admin/index.html"
