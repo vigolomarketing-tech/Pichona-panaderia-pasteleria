@@ -210,6 +210,39 @@
   cargarImagenesDelSitioEnVivo();
 
   // ------------------------------------------------------------------
+  // NOMBRES DE CATEGORÍAS EN VIVO (Supabase) — opcional
+  //
+  // Las etiquetas de los filtros (Panadería, Pastelería, etc) se pueden
+  // renombrar desde el panel de admin sin tocar código — viven en la
+  // tabla "categorias" de Supabase. El id interno de cada categoría (el
+  // que usa cada producto) no cambia nunca, solo el nombre que se ve acá.
+  // Si no está configurado o falla la red, se siguen mostrando los
+  // nombres fijos de js/data.js.
+  // ------------------------------------------------------------------
+  async function cargarCategoriasEnVivo() {
+    const sb = crearClienteSupabase();
+    if (!sb) return;
+
+    try {
+      const { data, error } = await sb.from("categorias").select("*");
+      if (error) throw error;
+      if (!data || data.length === 0) return;
+
+      const porId = {};
+      data.forEach((fila) => { porId[fila.id] = fila.nombre; });
+      PICHONA.categorias.forEach((cat) => {
+        if (porId[cat.id] != null) cat.nombre = porId[cat.id];
+      });
+
+      renderTabs();
+    } catch (err) {
+      console.warn("No se pudieron cargar las categorías en vivo de Supabase, se siguen mostrando los nombres fijos.", err);
+    }
+  }
+
+  cargarCategoriasEnVivo();
+
+  // ------------------------------------------------------------------
   // CATERING: combos, bocaditos, personalizados, condiciones
   // ------------------------------------------------------------------
   document.getElementById("catering-intro").textContent = PICHONA.catering.intro;
