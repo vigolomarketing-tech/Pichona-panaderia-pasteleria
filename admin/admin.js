@@ -73,7 +73,10 @@
   sb.auth.onAuthStateChange((_event, session) => {
     if (session) {
       mostrarVista("panel");
-      cargarProductos();
+      cargarCategorias().then(() => {
+        poblarSelectCategorias();
+        cargarProductos();
+      });
       cargarImagenesDelSitio();
     } else {
       mostrarVista("login");
@@ -87,11 +90,36 @@
   const listaEl = document.getElementById("admin-lista");
   const cargandoEl = document.getElementById("admin-cargando");
   const tabsEl = document.getElementById("admin-tabs");
+  const categoriaErrorEl = document.getElementById("admin-categoria-error");
   const buscadorEl = document.getElementById("admin-buscador");
 
   let productos = [];
   let categoriaActiva = "todas";
+  let categoriaEditando = null;
   let termino = "";
+
+  /**
+   * Las etiquetas de categoría (Panadería, Pastelería, etc) viven en la
+   * tabla "categorias" de Supabase para que se puedan renombrar desde acá
+   * sin tocar código — el id interno (el que usa cada producto) no se
+   * toca nunca. Si la tabla no responde (no se corrió sql/categorias.sql
+   * todavía, o falla la red), se sigue mostrando el nombre fijo de
+   * js/data.js sin romper nada.
+   */
+  async function cargarCategorias() {
+    const { data, error } = await sb.from("categorias").select("*");
+
+    if (error || !data) {
+      console.warn("No se pudieron cargar las categorías en vivo, se siguen mostrando los nombres fijos.", error);
+      return;
+    }
+
+    const porId = {};
+    data.forEach((fila) => { porId[fila.id] = fila.nombre; });
+    (typeof PICHONA !== "undefined" ? PICHONA.categorias : []).forEach((cat) => {
+      if (porId[cat.id] != null) cat.nombre = porId[cat.id];
+    });
+  }
 
   async function cargarProductos() {
     cargandoEl.hidden = false;
@@ -112,21 +140,46 @@
     renderLista();
   }
 
+  function editorCategoriaHTML(cat) {
+    return `
+      <span class="admin-tab-wrap admin-tab-wrap--editando">
+        <input type="text" class="admin-tab-input" value="${escapeHtml(cat.nombre)}"
+          data-rol="input-categoria-nombre" aria-label="Nuevo nombre para ${escapeHtml(cat.nombre)}">
+        <button type="button" class="admin-tab-guardar" data-rol="guardar-categoria" data-id="${cat.id}"
+          aria-label="Guardar nombre">✓</button>
+        <button type="button" class="admin-tab-cancelar" data-rol="cancelar-categoria" aria-label="Cancelar">✕</button>
+      </span>`;
+  }
+
   function renderTabs() {
-    const todas = [{ id: "todas", nombre: "Todas" }, ...(typeof PICHONA !== "undefined" ? PICHONA.categorias : [])];
+    const reales = typeof PICHONA !== "undefined" ? PICHONA.categorias : [];
+    const todas = [{ id: "todas", nombre: "Todas" }, ...reales];
+
     const botonesFiltro = todas
-      .map(
-        (cat) => `
-        <button type="button" class="tab-btn" role="tab"
-          aria-selected="${cat.id === categoriaActiva}"
-          data-categoria="${cat.id}">${cat.nombre}</button>`
-      )
+      .map((cat) => {
+        if (cat.id === categoriaEditando) return editorCategoriaHTML(cat);
+
+        // "Todas" es un filtro propio del panel, no una categoría real de
+        // la tabla "categorias" — no tiene sentido renombrarla.
+        const lapiz = cat.id === "todas"
+          ? ""
+          : `<button type="button" class="admin-tab-editar" data-rol="editar-categoria" data-id="${cat.id}"
+              aria-label="Renombrar categoría ${escapeHtml(cat.nombre)}" title="Renombrar categoría">✎</button>`;
+
+        return `
+        <span class="admin-tab-wrap">
+          <button type="button" class="tab-btn" role="tab"
+            aria-selected="${cat.id === categoriaActiva}"
+            data-categoria="${cat.id}">${escapeHtml(cat.nombre)}</button>${lapiz}
+        </span>`;
+      })
       .join("");
 
     // No es un filtro de productos — es un atajo para no tener que
     // scrollear toda la lista hasta llegar a las tarjetas de catering
     // dentro de "Imágenes del sitio". Por eso va aparte y con estilo
-    // propio (no participa de aria-selected ni de categoriaActiva).
+    // propio (no participa de aria-selected ni de categoriaActiva, y no
+    // lleva lápiz: no es una categoría real).
     const botonAtajo = `
         <button type="button" class="tab-btn tab-btn--atajo" data-rol="atajo-catering">↓ Catering</button>`;
 
@@ -142,6 +195,72 @@
 
     const btnAtajo = tabsEl.querySelector('[data-rol="atajo-catering"]');
     if (btnAtajo) btnAtajo.addEventListener("click", irASeccionCatering);
+
+    tabsEl.querySelectorAll('[data-rol="editar-categoria"]').forEach((btn) => {
+      btn.addEventListener("click", () => {
+        categoriaErrorEl.textContent = "";
+        categoriaEditando = btn.dataset.id;
+        renderTabs();
+      });
+    });
+
+    if (categoriaEditando) {
+      const input = tabsEl.querySelector('[data-rol="input-categoria-nombre"]');
+      const btnGuardar = tabsEl.querySelector('[data-rol="guardar-categoria"]');
+      const btnCancelar = tabsEl.querySelector('[data-rol="cancelar-categoria"]');
+
+      input.focus();
+      input.select();
+
+      btnGuardar.addEventListener("click", () => guardarNombreCategoria(categoriaEditando));
+      btnCancelar.addEventListener("click", () => {
+        categoriaEditando = null;
+        categoriaErrorEl.textContent = "";
+        renderTabs();
+      });
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          guardarNombreCategoria(categoriaEditando);
+        } else if (e.key === "Escape") {
+          categoriaEditando = null;
+          categoriaErrorEl.textContent = "";
+          renderTabs();
+        }
+      });
+    }
+  }
+
+  async function guardarNombreCategoria(id) {
+    const input = tabsEl.querySelector('[data-rol="input-categoria-nombre"]');
+    const btnGuardar = tabsEl.querySelector('[data-rol="guardar-categoria"]');
+    const nuevoNombre = input.value.trim();
+
+    categoriaErrorEl.textContent = "";
+
+    if (!nuevoNombre) {
+      categoriaErrorEl.textContent = "El nombre no puede quedar vacío.";
+      return;
+    }
+
+    btnGuardar.disabled = true;
+
+    const { error } = await sb.from("categorias").update({ nombre: nuevoNombre }).eq("id", id);
+
+    btnGuardar.disabled = false;
+
+    if (error) {
+      categoriaErrorEl.textContent = "No se pudo guardar: " + error.message;
+      return;
+    }
+
+    const cat = (typeof PICHONA !== "undefined" ? PICHONA.categorias : []).find((c) => c.id === id);
+    if (cat) cat.nombre = nuevoNombre;
+
+    categoriaEditando = null;
+    renderTabs();
+    renderLista();
+    poblarSelectCategorias();
   }
 
   function irASeccionCatering() {

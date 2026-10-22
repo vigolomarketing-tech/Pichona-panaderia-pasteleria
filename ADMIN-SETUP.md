@@ -81,6 +81,21 @@ También es seguro correrlo de nuevo si hiciera falta.
 
 Por ahora el panel no permite borrar productos ni crear categorías nuevas (las categorías se eligen de una lista fija, para no terminar con categorías sueltas sin ningún filtro asociado) — si en algún momento hace falta alguna de las dos cosas, me avisás.
 
+## Paso 3quinquies — Renombrar categorías (migración nueva)
+
+Al lado de cada categoría en el panel (Panadería, Pastelería, Petit fours y tartitas, Salados, Almacén) ahora hay un lápiz para cambiarle el nombre — por ejemplo, si quieren que "Almacén" pase a llamarse otra cosa. El cambio se ve tanto en el panel como en los filtros del catálogo público. Lo que **no** cambia nunca es el identificador interno de la categoría (el que asocia cada producto a su categoría), así que renombrar no mueve ni desvincula ningún producto. La pastilla "↓ Catering" no es una categoría real, así que no tiene lápiz; tampoco se pueden crear categorías nuevas ni borrar las existentes desde acá, solo renombrar.
+
+Las etiquetas vivían hardcodeadas en `js/data.js`; ahora pasan a vivir en una tabla nueva de Supabase, con el sitio público y el panel leyendo de ahí y usando esos nombres fijos como respaldo si la tabla no responde.
+
+1. En el dashboard: **SQL Editor → New query**.
+2. Abrí el archivo `sql/categorias.sql` de este repo, copiá **todo** su contenido, y pegalo en el editor.
+3. Click en **Run**.
+4. Si salió bien, deberías ver una tabla `categorias` con 5 filas en **Table Editor** (panaderia, pasteleria, petit-fours-tartitas, salados, almacen), con el nombre de hoy de cada una.
+
+Este archivo también suma explícitamente los permisos de `select` (para cualquier visitante y para el usuario logueado) y de `update` (solo para el usuario logueado) sobre la tabla nueva — en este proyecto no alcanza con crear las políticas de RLS para que una tabla nueva quede expuesta, hace falta este paso aparte (lo validé localmente: sin esos `grant`, tanto la lectura pública como la edición devuelven "permission denied").
+
+También es seguro correrlo de nuevo si hiciera falta.
+
 ## Paso 4 — Crear el usuario de Euge
 
 Vos das de alta el usuario desde el dashboard — no hace falta tocar código para esto, y es la forma más segura (evita tener que exponer nada en el sitio para que alguien se registre solo):
@@ -104,10 +119,11 @@ Los cambios de `js/supabase-config.js` (con las credenciales reales) tienen que 
 4. Deberías ver la lista completa del catálogo, con tabs por categoría y buscador.
 5. Cambiá el nombre, la descripción y/o el precio de un producto de prueba y tocá "Guardar cambios" → tiene que aparecer "Cambios guardados ✓".
 6. Subí una foto de prueba con "Cambiar foto" (desde el celular o la compu) → tiene que aparecer "Foto actualizada ✓" y el thumbnail se actualiza al toque.
-7. Tocá "+ Agregar producto", completá nombre / categoría (elegida de la lista) / unidad / descripción / precio, sin cargar foto, y guardá → tiene que aparecer en la lista con "Sin foto", en la categoría elegida. Repetí cargando una foto esta vez, para probar también ese camino.
-8. Más abajo en el panel, probá lo mismo en la sección "Imágenes del sitio" (7 tarjetas: 4 de la galería + 3 de catering) — mismo botón "Cambiar foto", mismo resultado. Probá puntualmente con "Catering — Bocaditos fríos" y confirmá que al recargar el sitio se actualizan juntas las tarjetas de "Lunch Box 20 personas" y "Un toque gourmet" (comparten la misma foto a propósito).
-9. Abrí el sitio público (`/index.html` o la home) en otra pestaña o en el celular, **recargá la página**, y confirmá que los cambios del panel ya se ven ahí (el producto editado, el producto nuevo y la foto decorativa). Esa es la prueba de que quedó todo conectado de punta a punta.
-10. Cerrá sesión con el botón del panel y confirmá que vuelve a pedir login.
+7. Tocá "+ Agregar producto" (el formulario tiene que estar cerrado hasta que lo tocás), completá nombre / categoría (elegida de la lista) / unidad / descripción / precio, sin cargar foto, y guardá → tiene que aparecer en la lista con "Sin foto", en la categoría elegida, y el formulario se cierra solo. Repetí cargando una foto esta vez, para probar también ese camino. Probá también "Cancelar" y confirmá que cierra el formulario sin crear nada.
+8. En los filtros de categoría, tocá el lápiz de una categoría de prueba, escribí un nombre nuevo y guardá (con el botón ✓ o apretando Enter) → la pastilla cambia de nombre al toque, y ese mismo nombre nuevo aparece también en la categoría de cada producto de la lista y en el desplegable de "+ Agregar producto". Probá "Cancelar" (✕) y confirmá que no guarda nada.
+9. Más abajo en el panel, probá lo mismo en la sección "Imágenes del sitio" (7 tarjetas: 4 de la galería + 3 de catering) — mismo botón "Cambiar foto", mismo resultado. Probá puntualmente con "Catering — Bocaditos fríos" y confirmá que al recargar el sitio se actualizan juntas las tarjetas de "Lunch Box 20 personas" y "Un toque gourmet" (comparten la misma foto a propósito).
+10. Abrí el sitio público (`/index.html` o la home) en otra pestaña o en el celular, **recargá la página**, y confirmá que los cambios del panel ya se ven ahí (el producto editado, el producto nuevo, la foto decorativa y el nombre de categoría que renombraste). Esa es la prueba de que quedó todo conectado de punta a punta.
+11. Cerrá sesión con el botón del panel y confirmá que vuelve a pedir login.
 
 Si algo de esto no pasa, lo más probable es un typo en `js/supabase-config.js` o que el script SQL no se haya corrido — no hace falta tocar nada más del código.
 
@@ -117,5 +133,6 @@ Si algo de esto no pasa, lo más probable es un typo en `js/supabase-config.js` 
 - La tabla `productos` es de lectura pública (cualquiera puede *ver* el catálogo, lógicamente — es lo que muestra el sitio) pero solo un usuario logueado puede *editar* (nombre, descripción, precio o foto) o *crear* productos nuevos (políticas RLS `for update` y `for insert`, ambas `using/with check (auth.role() = 'authenticated')`).
 - El panel no permite borrar productos ni crear categorías nuevas a mano — la categoría de un producto nuevo se elige siempre de la lista ya definida en `js/data.js` (`PICHONA.categorias`), para que no queden productos sueltos en una categoría sin filtro asociado.
 - El `id` interno de un producto nuevo se genera solo, a partir del nombre (ej. "Torta de limón" → `torta-de-limon`), sumando un número al final si ya existe un producto con ese mismo id.
+- Las categorías se pueden renombrar (solo la etiqueta `nombre` en la tabla `categorias`), pero no crear ni borrar desde el panel — el `id` interno de cada categoría, el que asocia a cada producto, no se toca nunca.
 - El límite de tamaño de foto es 15 MB por archivo, validado en el navegador antes de intentar subir nada — si se supera, se muestra un error claro en el panel, no falla en silencio.
 - Cada foto subida se recorta automáticamente al centro en un cuadrado de hasta 1200×1200 px antes de subirse, para que coincida con la proporción 1:1 que usa la grilla de productos del catálogo público — no hace falta que la dueña recorte nada de su lado.
