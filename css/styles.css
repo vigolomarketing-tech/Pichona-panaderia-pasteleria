@@ -522,7 +522,8 @@ a { color: var(--color-camel-dark); }
   padding: 0;
 }
 .form-row input,
-.form-row textarea {
+.form-row textarea,
+.form-row select {
   font-family: var(--font-cuerpo);
   font-size: 1rem;
   padding: 0.7em 0.85em;
@@ -531,7 +532,7 @@ a { color: var(--color-camel-dark); }
   background: #fff;
   color: var(--color-marron);
 }
-.form-row input:focus, .form-row textarea:focus {
+.form-row input:focus, .form-row textarea:focus, .form-row select:focus {
   border-color: var(--color-camel);
 }
 .form-row--checkboxes { border: none; margin: 0; padding: 0; }
