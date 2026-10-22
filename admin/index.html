@@ -13,8 +13,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Jost:wght@400;500;600&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="../css/styles.css">
-<link rel="stylesheet" href="admin.css">
+<link rel="stylesheet" href="../css/styles.css?v=b264b9c">
+<link rel="stylesheet" href="admin.css?v=b264b9c">
 </head>
 <body class="admin-body">
 
@@ -53,9 +53,50 @@
   <!-- ============================= PANEL ============================= -->
   <section id="vista-panel" class="admin-panel" hidden>
     <p class="admin-panel__ayuda">
-      Tocá el precio de un producto para cambiarlo y guardalo. Para cambiar una foto, tocá "Cambiar foto"
-      y elegí una imagen desde tu celular o computadora — se recorta sola para que quede prolija.
+      Tocá el nombre, la descripción o el precio de un producto para cambiarlos y guardalos juntos con "Guardar
+      cambios". Para cambiar una foto, tocá "Cambiar foto" y elegí una imagen desde tu celular o computadora —
+      se recorta sola para que quede prolija.
     </p>
+
+    <div class="admin-nuevo-wrap">
+      <button type="button" class="btn btn--outline" id="btn-mostrar-nuevo">+ Agregar producto</button>
+      <form id="form-nuevo-producto" class="admin-form admin-nuevo-form" hidden novalidate>
+        <h2>Agregar producto nuevo</h2>
+        <div class="form-row">
+          <label for="nuevo-nombre">Nombre</label>
+          <input type="text" id="nuevo-nombre" name="nombre" required>
+        </div>
+        <div class="form-row">
+          <label for="nuevo-categoria">Categoría</label>
+          <select id="nuevo-categoria" name="categoria" required></select>
+        </div>
+        <div class="form-row">
+          <label for="nuevo-precio">Precio (dejalo vacío para "Consultar precio")</label>
+          <input type="number" id="nuevo-precio" name="precio" min="0" step="1" inputmode="numeric">
+        </div>
+        <div class="form-row">
+          <label for="nuevo-unidad">Unidad</label>
+          <input type="text" id="nuevo-unidad" name="unidad" placeholder="unidad, kilo, docena...">
+        </div>
+        <div class="form-row">
+          <label for="nuevo-descripcion">Descripción</label>
+          <textarea id="nuevo-descripcion" name="descripcion"></textarea>
+        </div>
+        <div class="form-row">
+          <label>Foto (opcional)</label>
+          <div class="admin-nuevo-foto-wrap">
+            <div class="admin-fila__foto-slot" id="nuevo-foto-slot"></div>
+            <input type="file" accept="image/*" id="nuevo-foto-input" hidden>
+            <button type="button" class="btn btn--outline admin-fila__cambiar-foto" id="btn-nuevo-foto">Elegir foto</button>
+          </div>
+        </div>
+        <p class="admin-error" id="nuevo-producto-error" role="alert"></p>
+        <div class="admin-nuevo-acciones">
+          <button type="submit" class="btn btn--primary" id="btn-guardar-nuevo">Agregar producto</button>
+          <button type="button" class="btn btn--outline" id="btn-cancelar-nuevo">Cancelar</button>
+        </div>
+      </form>
+    </div>
 
     <div class="admin-controles">
       <input type="search" id="admin-buscador" placeholder="Buscar un producto..." class="admin-buscador">
@@ -81,8 +122,8 @@
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="../js/supabase-config.js"></script>
-<script src="../js/data.js"></script>
-<script src="admin.js"></script>
+<script src="../js/supabase-config.js?v=b264b9c"></script>
+<script src="../js/data.js?v=b264b9c"></script>
+<script src="admin.js?v=b264b9c"></script>
 </body>
 </html>

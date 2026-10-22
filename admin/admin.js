@@ -114,7 +114,7 @@
 
   function renderTabs() {
     const todas = [{ id: "todas", nombre: "Todas" }, ...(typeof PICHONA !== "undefined" ? PICHONA.categorias : [])];
-    tabsEl.innerHTML = todas
+    const botonesFiltro = todas
       .map(
         (cat) => `
         <button type="button" class="tab-btn" role="tab"
@@ -123,13 +123,31 @@
       )
       .join("");
 
-    tabsEl.querySelectorAll(".tab-btn").forEach((btn) => {
+    // No es un filtro de productos — es un atajo para no tener que
+    // scrollear toda la lista hasta llegar a las tarjetas de catering
+    // dentro de "Imágenes del sitio". Por eso va aparte y con estilo
+    // propio (no participa de aria-selected ni de categoriaActiva).
+    const botonAtajo = `
+        <button type="button" class="tab-btn tab-btn--atajo" data-rol="atajo-catering">↓ Catering</button>`;
+
+    tabsEl.innerHTML = botonesFiltro + botonAtajo;
+
+    tabsEl.querySelectorAll(".tab-btn[data-categoria]").forEach((btn) => {
       btn.addEventListener("click", () => {
         categoriaActiva = btn.dataset.categoria;
         renderTabs();
         renderLista();
       });
     });
+
+    const btnAtajo = tabsEl.querySelector('[data-rol="atajo-catering"]');
+    if (btnAtajo) btnAtajo.addEventListener("click", irASeccionCatering);
+  }
+
+  function irASeccionCatering() {
+    const primeraTarjetaCatering = imagenesGridEl.querySelector('.admin-imagen-card[data-grupo="catering"]');
+    const destino = primeraTarjetaCatering || document.querySelector(".admin-sitio-imagenes");
+    if (destino) destino.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   buscadorEl.addEventListener("input", (e) => {
@@ -159,8 +177,18 @@
   function fotoSlotHTML(imagen, alt, aspecto) {
     const estilo = ` style="aspect-ratio:${aspecto || "1 / 1"};"`;
     return imagen
-      ? `<img class="admin-fila__foto" src="${rutaImagenAdmin(imagen)}" alt="${alt}"${estilo}>`
+      ? `<img class="admin-fila__foto" src="${rutaImagenAdmin(imagen)}" alt="${escapeHtml(alt)}"${estilo}>`
       : `<div class="admin-fila__foto admin-fila__foto--vacia"${estilo}>Sin foto</div>`;
+  }
+
+  function escapeHtml(valor) {
+    return String(valor == null ? "" : valor).replace(/[&<>"']/g, (c) => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;"
+    }[c]));
   }
 
   function filaHTML(p) {
@@ -172,20 +200,23 @@
           <button type="button" class="btn btn--outline admin-fila__cambiar-foto" data-rol="btn-foto">Cambiar foto</button>
         </div>
         <div class="admin-fila__info">
-          <h3>${p.nombre}</h3>
+          <input type="text" class="admin-fila__input-nombre" value="${escapeHtml(p.nombre)}"
+            placeholder="Nombre del producto" data-rol="input-nombre" aria-label="Nombre del producto">
           <p class="admin-fila__categoria">${nombreCategoria(p.categoria)}</p>
+          <textarea class="admin-fila__input-descripcion" placeholder="Descripción (opcional)"
+            data-rol="input-descripcion" aria-label="Descripción de ${escapeHtml(p.nombre)}">${escapeHtml(p.descripcion)}</textarea>
           <div class="admin-fila__precio-row">
             <span>$</span>
             <input type="number" min="0" step="1" inputmode="numeric"
               value="${p.precio == null ? "" : p.precio}"
               placeholder="Consultar"
               data-rol="input-precio"
-              aria-label="Precio de ${p.nombre}">
+              aria-label="Precio de ${escapeHtml(p.nombre)}">
             <span class="admin-fila__unidad">/ ${p.unidad}</span>
           </div>
         </div>
         <div class="admin-fila__acciones">
-          <button type="button" class="btn btn--primary admin-fila__guardar" data-rol="btn-guardar">Guardar precio</button>
+          <button type="button" class="btn btn--primary admin-fila__guardar" data-rol="btn-guardar">Guardar cambios</button>
           <p class="admin-fila__estado" data-rol="estado"></p>
         </div>
       </div>`;
@@ -210,7 +241,7 @@
       const id = fila.dataset.id;
       const producto = productos.find((p) => p.id === id);
 
-      fila.querySelector('[data-rol="btn-guardar"]').addEventListener("click", () => guardarPrecio(fila, producto));
+      fila.querySelector('[data-rol="btn-guardar"]').addEventListener("click", () => guardarCambios(fila, producto));
       fila.querySelector('[data-rol="btn-foto"]').addEventListener("click", () => {
         fila.querySelector('[data-rol="input-foto"]').click();
       });
@@ -228,11 +259,21 @@
     el.className = "admin-fila__estado" + (tipo ? " admin-fila__estado--" + tipo : "");
   }
 
-  async function guardarPrecio(fila, producto) {
-    const input = fila.querySelector('[data-rol="input-precio"]');
+  async function guardarCambios(fila, producto) {
+    const inputNombre = fila.querySelector('[data-rol="input-nombre"]');
+    const inputDescripcion = fila.querySelector('[data-rol="input-descripcion"]');
+    const inputPrecio = fila.querySelector('[data-rol="input-precio"]');
     const btn = fila.querySelector('[data-rol="btn-guardar"]');
-    const valorTexto = input.value.trim();
 
+    const nuevoNombre = inputNombre.value.trim();
+    if (!nuevoNombre) {
+      setEstado(fila, "El nombre no puede quedar vacío.", "error");
+      return;
+    }
+
+    const nuevaDescripcion = inputDescripcion.value.trim();
+
+    const valorTexto = inputPrecio.value.trim();
     let nuevoPrecio = null;
     if (valorTexto !== "") {
       nuevoPrecio = Number(valorTexto);
@@ -245,7 +286,10 @@
     btn.disabled = true;
     setEstado(fila, "Guardando...", "");
 
-    const { error } = await sb.from("productos").update({ precio: nuevoPrecio }).eq("id", producto.id);
+    const { error } = await sb
+      .from("productos")
+      .update({ nombre: nuevoNombre, descripcion: nuevaDescripcion || null, precio: nuevoPrecio })
+      .eq("id", producto.id);
 
     btn.disabled = false;
 
@@ -254,8 +298,10 @@
       return;
     }
 
+    producto.nombre = nuevoNombre;
+    producto.descripcion = nuevaDescripcion || null;
     producto.precio = nuevoPrecio;
-    setEstado(fila, "Precio guardado ✓", "ok");
+    setEstado(fila, "Cambios guardados ✓", "ok");
   }
 
   async function cambiarFoto(fila, producto, file) {
@@ -376,6 +422,191 @@
   }
 
   // ------------------------------------------------------------------
+  // AGREGAR PRODUCTO NUEVO
+  // ------------------------------------------------------------------
+  const btnMostrarNuevo = document.getElementById("btn-mostrar-nuevo");
+  const formNuevoProducto = document.getElementById("form-nuevo-producto");
+  const btnCancelarNuevo = document.getElementById("btn-cancelar-nuevo");
+  const btnGuardarNuevo = document.getElementById("btn-guardar-nuevo");
+  const nuevoProductoError = document.getElementById("nuevo-producto-error");
+  const inputNuevoNombre = document.getElementById("nuevo-nombre");
+  const selectNuevoCategoria = document.getElementById("nuevo-categoria");
+  const inputNuevoPrecio = document.getElementById("nuevo-precio");
+  const inputNuevoUnidad = document.getElementById("nuevo-unidad");
+  const inputNuevoDescripcion = document.getElementById("nuevo-descripcion");
+  const fotoSlotNuevo = document.getElementById("nuevo-foto-slot");
+  const inputNuevoFoto = document.getElementById("nuevo-foto-input");
+  const btnNuevoFoto = document.getElementById("btn-nuevo-foto");
+
+  let fotoNuevoBlob = null;
+
+  function poblarSelectCategorias() {
+    const cats = typeof PICHONA !== "undefined" ? PICHONA.categorias : [];
+    selectNuevoCategoria.innerHTML =
+      `<option value="" disabled selected>Elegí una categoría</option>` +
+      cats.map((c) => `<option value="${c.id}">${escapeHtml(c.nombre)}</option>`).join("");
+  }
+  poblarSelectCategorias();
+
+  fotoSlotNuevo.innerHTML = fotoSlotHTML(null, "Nuevo producto");
+
+  btnMostrarNuevo.addEventListener("click", () => {
+    formNuevoProducto.hidden = false;
+    btnMostrarNuevo.hidden = true;
+    inputNuevoNombre.focus();
+  });
+
+  function cerrarFormNuevo() {
+    formNuevoProducto.reset();
+    formNuevoProducto.hidden = true;
+    btnMostrarNuevo.hidden = false;
+    nuevoProductoError.textContent = "";
+    fotoNuevoBlob = null;
+    fotoSlotNuevo.innerHTML = fotoSlotHTML(null, "Nuevo producto");
+  }
+
+  btnCancelarNuevo.addEventListener("click", cerrarFormNuevo);
+
+  btnNuevoFoto.addEventListener("click", () => inputNuevoFoto.click());
+
+  inputNuevoFoto.addEventListener("change", async (e) => {
+    const file = e.target.files[0];
+    e.target.value = "";
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      nuevoProductoError.textContent = "Elegí un archivo de imagen (JPG, PNG, etc).";
+      return;
+    }
+    if (file.size > MAX_BYTES) {
+      const pesoMB = (file.size / (1024 * 1024)).toFixed(1);
+      nuevoProductoError.textContent = `La imagen pesa ${pesoMB} MB, el máximo es 15 MB. Elegí otra foto o bajale la calidad.`;
+      return;
+    }
+
+    try {
+      fotoNuevoBlob = await recortarCuadrado(file, LADO_FOTO);
+    } catch (err) {
+      nuevoProductoError.textContent = "No pudimos abrir esa imagen. Probá con otra foto (JPG o PNG).";
+      return;
+    }
+
+    nuevoProductoError.textContent = "";
+    const urlPreview = URL.createObjectURL(fotoNuevoBlob);
+    fotoSlotNuevo.innerHTML = `<img class="admin-fila__foto" src="${urlPreview}" alt="Vista previa" style="aspect-ratio:1 / 1;">`;
+  });
+
+  /**
+   * Genera un id de producto a partir del nombre (ej. "Torta de Chocolate"
+   * -> "torta-de-chocolate"), sumando un sufijo numérico si ya existe uno
+   * igual en el catálogo cargado.
+   */
+  function slugify(texto) {
+    return texto
+      .normalize("NFD")
+      .replace(/[̀-ͯ]/g, "")
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+  }
+
+  function generarIdDisponible(nombre) {
+    const base = slugify(nombre) || "producto";
+    let id = base;
+    let contador = 2;
+    while (productos.some((p) => p.id === id)) {
+      id = `${base}-${contador}`;
+      contador++;
+    }
+    return id;
+  }
+
+  formNuevoProducto.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    nuevoProductoError.textContent = "";
+
+    const nombre = inputNuevoNombre.value.trim();
+    const categoria = selectNuevoCategoria.value;
+    const unidad = inputNuevoUnidad.value.trim();
+    const descripcion = inputNuevoDescripcion.value.trim();
+    const valorPrecio = inputNuevoPrecio.value.trim();
+
+    if (!nombre) {
+      nuevoProductoError.textContent = "Ingresá un nombre.";
+      return;
+    }
+    if (!categoria) {
+      nuevoProductoError.textContent = "Elegí una categoría.";
+      return;
+    }
+    if (!unidad) {
+      nuevoProductoError.textContent = "Ingresá una unidad (unidad, kilo, docena...).";
+      return;
+    }
+
+    let precio = null;
+    if (valorPrecio !== "") {
+      precio = Number(valorPrecio);
+      if (!Number.isFinite(precio) || precio < 0) {
+        nuevoProductoError.textContent = "Ingresá un precio válido (o dejalo vacío para \"Consultar precio\").";
+        return;
+      }
+    }
+
+    const id = generarIdDisponible(nombre);
+
+    btnGuardarNuevo.disabled = true;
+    btnGuardarNuevo.textContent = "Agregando...";
+
+    let imagen = null;
+    if (fotoNuevoBlob) {
+      const ruta = `${id}-${Date.now()}.jpg`;
+      const { error: errorSubida } = await sb.storage
+        .from("productos-fotos")
+        .upload(ruta, fotoNuevoBlob, { contentType: "image/jpeg", upsert: true });
+
+      if (errorSubida) {
+        btnGuardarNuevo.disabled = false;
+        btnGuardarNuevo.textContent = "Agregar producto";
+        nuevoProductoError.textContent = "No se pudo subir la foto: " + errorSubida.message;
+        return;
+      }
+
+      const { data: urlData } = sb.storage.from("productos-fotos").getPublicUrl(ruta);
+      imagen = urlData.publicUrl;
+    }
+
+    const nuevoProducto = {
+      id,
+      nombre,
+      precio,
+      unidad,
+      descripcion: descripcion || null,
+      categoria,
+      imagen,
+      destacado: false,
+      disponible: true
+    };
+
+    const { error } = await sb.from("productos").insert(nuevoProducto);
+
+    btnGuardarNuevo.disabled = false;
+    btnGuardarNuevo.textContent = "Agregar producto";
+
+    if (error) {
+      nuevoProductoError.textContent = "No se pudo agregar el producto: " + error.message;
+      return;
+    }
+
+    productos.push(nuevoProducto);
+    productos.sort((a, b) => a.categoria.localeCompare(b.categoria) || a.nombre.localeCompare(b.nombre));
+    renderTabs();
+    renderLista();
+    cerrarFormNuevo();
+  });
+
+  // ------------------------------------------------------------------
   // IMÁGENES DEL SITIO (decorativas, no son fotos de producto)
   //
   // Las 4 fotos de la galería debajo del hero (petit-fours-1, tartitas-1,
@@ -407,8 +638,9 @@
   }
 
   function imagenCardHTML(fila) {
+    const grupo = fila.label && fila.label.startsWith("Catering") ? "catering" : "galeria";
     return `
-      <div class="admin-imagen-card" data-id="${fila.id}">
+      <div class="admin-imagen-card" data-id="${fila.id}" data-grupo="${grupo}">
         <div class="admin-imagen-card__foto-slot" data-rol="foto-slot">${fotoSlotHTML(fila.imagen, fila.label, aspectoCSS(fila))}</div>
         <div class="admin-imagen-card__info">
           <p class="admin-imagen-card__label">${fila.label}</p>

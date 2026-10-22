@@ -73,6 +73,36 @@
   font-size: 0.95rem;
 }
 
+.admin-nuevo-wrap {
+  margin: 1.25rem 0;
+}
+.admin-nuevo-form {
+  max-width: 480px;
+  background: #fff;
+  border: 1px solid var(--color-borde);
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-top: 1rem;
+}
+.admin-nuevo-form h2 {
+  font-size: 1.2rem;
+  margin: 0 0 0.6em;
+}
+.admin-nuevo-foto-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.admin-nuevo-foto-wrap .admin-fila__cambiar-foto {
+  width: auto;
+  margin-top: 0;
+}
+.admin-nuevo-acciones {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.25rem;
+}
+
 .admin-controles {
   display: flex;
   flex-direction: column;
@@ -155,14 +185,44 @@
   width: 100%;
 }
 
-.admin-fila__info h3 {
+.admin-fila__input-nombre {
+  display: block;
+  width: 100%;
+  font-family: var(--font-titulo);
   font-size: 1.05rem;
-  margin: 0 0 0.15em;
+  font-weight: 600;
+  padding: 0.25em 0.4em;
+  margin: 0 0 0.2em -0.4em;
+  border: 1.5px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-marron);
+}
+.admin-fila__input-nombre:focus {
+  border-color: var(--color-camel);
+  background: #fff;
 }
 .admin-fila__categoria {
   font-size: 0.78rem;
   color: var(--color-camel-dark);
   margin: 0 0 0.5em;
+}
+.admin-fila__input-descripcion {
+  display: block;
+  width: 100%;
+  font-family: var(--font-cuerpo);
+  font-size: 0.85rem;
+  color: var(--color-marron-suave);
+  padding: 0.45em 0.6em;
+  margin: 0 0 0.6em;
+  border: 1.5px solid var(--color-borde);
+  border-radius: 8px;
+  background: #fff;
+  resize: vertical;
+  min-height: 2.6em;
+}
+.admin-fila__input-descripcion:focus {
+  border-color: var(--color-camel);
 }
 .admin-fila__precio-row {
   display: flex;
@@ -214,6 +274,7 @@
   margin-top: 3rem;
   padding-top: 2rem;
   border-top: 1px solid var(--color-borde);
+  scroll-margin-top: 130px;
 }
 .admin-sitio-imagenes h2 {
   font-size: 1.5rem;
@@ -236,6 +297,7 @@
   display: flex;
   gap: 1rem;
   align-items: center;
+  scroll-margin-top: 130px;
 }
 .admin-imagen-card__foto-slot img,
 .admin-imagen-card__foto-slot .admin-fila__foto--vacia {

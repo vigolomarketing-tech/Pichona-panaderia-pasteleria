@@ -68,6 +68,19 @@ Las fotos de los combos de catering (Lunch Box 20 personas, Caja de 30 bocaditos
 
 También es seguro correrlo de nuevo si hiciera falta.
 
+## Paso 3quater — Permiso para agregar productos nuevos (migración nueva)
+
+El panel ahora deja crear productos nuevos desde "+ Agregar producto" (además de editar nombre, descripción y precio de los que ya existen, que no necesita nada nuevo de este lado). Para crear productos hace falta un permiso que `schema.sql` no incluía: una política de `insert` sobre `productos` (sin ella, Supabase rechaza la creación con un error de "row-level security policy").
+
+1. En el dashboard: **SQL Editor → New query**.
+2. Abrí el archivo `sql/productos_insert.sql` de este repo, copiá **todo** su contenido, y pegalo en el editor.
+3. Click en **Run**.
+4. Si salió bien, no deberías ver ningún error — y desde ese momento "+ Agregar producto" en el panel funciona.
+
+También es seguro correrlo de nuevo si hiciera falta.
+
+Por ahora el panel no permite borrar productos ni crear categorías nuevas (las categorías se eligen de una lista fija, para no terminar con categorías sueltas sin ningún filtro asociado) — si en algún momento hace falta alguna de las dos cosas, me avisás.
+
 ## Paso 4 — Crear el usuario de Euge
 
 Vos das de alta el usuario desde el dashboard — no hace falta tocar código para esto, y es la forma más segura (evita tener que exponer nada en el sitio para que alguien se registre solo):
@@ -89,17 +102,20 @@ Los cambios de `js/supabase-config.js` (con las credenciales reales) tienen que 
 2. Deberías ver la pantalla de login (si en cambio ves "Todavía no está configurado", revisá el Paso 2).
 3. Ingresá con el email y contraseña que creaste en el Paso 4.
 4. Deberías ver la lista completa del catálogo, con tabs por categoría y buscador.
-5. Cambiá el precio de un producto de prueba y tocá "Guardar precio" → tiene que aparecer "Precio guardado ✓".
+5. Cambiá el nombre, la descripción y/o el precio de un producto de prueba y tocá "Guardar cambios" → tiene que aparecer "Cambios guardados ✓".
 6. Subí una foto de prueba con "Cambiar foto" (desde el celular o la compu) → tiene que aparecer "Foto actualizada ✓" y el thumbnail se actualiza al toque.
-7. Más abajo en el panel, probá lo mismo en la sección "Imágenes del sitio" (7 tarjetas: 4 de la galería + 3 de catering) — mismo botón "Cambiar foto", mismo resultado. Probá puntualmente con "Catering — Bocaditos fríos" y confirmá que al recargar el sitio se actualizan juntas las tarjetas de "Lunch Box 20 personas" y "Un toque gourmet" (comparten la misma foto a propósito).
-8. Abrí el sitio público (`/index.html` o la home) en otra pestaña o en el celular, **recargá la página**, y confirmá que el precio/foto que cambiaste en el panel ya se ve ahí (tanto el producto de prueba como la foto decorativa). Esa es la prueba de que quedó todo conectado de punta a punta.
-9. Cerrá sesión con el botón del panel y confirmá que vuelve a pedir login.
+7. Tocá "+ Agregar producto", completá nombre / categoría (elegida de la lista) / unidad / descripción / precio, sin cargar foto, y guardá → tiene que aparecer en la lista con "Sin foto", en la categoría elegida. Repetí cargando una foto esta vez, para probar también ese camino.
+8. Más abajo en el panel, probá lo mismo en la sección "Imágenes del sitio" (7 tarjetas: 4 de la galería + 3 de catering) — mismo botón "Cambiar foto", mismo resultado. Probá puntualmente con "Catering — Bocaditos fríos" y confirmá que al recargar el sitio se actualizan juntas las tarjetas de "Lunch Box 20 personas" y "Un toque gourmet" (comparten la misma foto a propósito).
+9. Abrí el sitio público (`/index.html` o la home) en otra pestaña o en el celular, **recargá la página**, y confirmá que los cambios del panel ya se ven ahí (el producto editado, el producto nuevo y la foto decorativa). Esa es la prueba de que quedó todo conectado de punta a punta.
+10. Cerrá sesión con el botón del panel y confirmá que vuelve a pedir login.
 
 Si algo de esto no pasa, lo más probable es un typo en `js/supabase-config.js` o que el script SQL no se haya corrido — no hace falta tocar nada más del código.
 
 ## Notas de seguridad y alcance
 
 - Hay un solo usuario administrador (no hay sistema de roles ni multiusuario) — cualquiera que tenga ese email/contraseña puede editar cualquier producto. Esto es intencional, según lo pedido.
-- La tabla `productos` es de lectura pública (cualquiera puede *ver* el catálogo, lógicamente — es lo que muestra el sitio) pero solo un usuario logueado puede *editar* precio o foto (política RLS `for update using (auth.role() = 'authenticated')`).
+- La tabla `productos` es de lectura pública (cualquiera puede *ver* el catálogo, lógicamente — es lo que muestra el sitio) pero solo un usuario logueado puede *editar* (nombre, descripción, precio o foto) o *crear* productos nuevos (políticas RLS `for update` y `for insert`, ambas `using/with check (auth.role() = 'authenticated')`).
+- El panel no permite borrar productos ni crear categorías nuevas a mano — la categoría de un producto nuevo se elige siempre de la lista ya definida en `js/data.js` (`PICHONA.categorias`), para que no queden productos sueltos en una categoría sin filtro asociado.
+- El `id` interno de un producto nuevo se genera solo, a partir del nombre (ej. "Torta de limón" → `torta-de-limon`), sumando un número al final si ya existe un producto con ese mismo id.
 - El límite de tamaño de foto es 15 MB por archivo, validado en el navegador antes de intentar subir nada — si se supera, se muestra un error claro en el panel, no falla en silencio.
 - Cada foto subida se recorta automáticamente al centro en un cuadrado de hasta 1200×1200 px antes de subirse, para que coincida con la proporción 1:1 que usa la grilla de productos del catálogo público — no hace falta que la dueña recorte nada de su lado.
