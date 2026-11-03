@@ -299,6 +299,59 @@
   </svg>
 </a>
 
+<!-- Botón flotante del carrito — a la izquierda para no superponerse con
+     el de WhatsApp (a la derecha) en mobile. -->
+<button type="button" id="carrito-flotante" class="carrito-flotante" aria-label="Ver carrito">
+  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+    <circle cx="9" cy="20" r="1.5" fill="currentColor"/>
+    <circle cx="18" cy="20" r="1.5" fill="currentColor"/>
+    <path d="M2 3h2l2.2 11.2a2 2 0 0 0 2 1.6h8.6a2 2 0 0 0 2-1.6L21 7H6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+  <span class="carrito-flotante__badge" id="carrito-badge" hidden>0</span>
+</button>
+
+<!-- Aviso breve ("Agregado ✓") al sumar un producto al carrito -->
+<p class="toast" id="carrito-toast" role="status" aria-live="polite" hidden></p>
+
+<!-- ============================= PANEL DEL CARRITO ============================= -->
+<div class="carrito-overlay" id="carrito-overlay" hidden></div>
+<div class="carrito-panel" id="carrito-panel" role="dialog" aria-modal="true" aria-labelledby="carrito-titulo" hidden>
+  <div class="carrito-panel__header">
+    <h2 id="carrito-titulo">Tu pedido</h2>
+    <button type="button" class="carrito-panel__cerrar" id="carrito-cerrar" aria-label="Cerrar carrito">✕</button>
+  </div>
+
+  <!-- Única zona que scrollea del panel: lista + datos. El header y el
+       footer (total + "Enviar") quedan siempre fijos y a la vista, aun en
+       pantallas bajas con varios productos cargados. -->
+  <div class="carrito-panel__body">
+    <p class="carrito-vacio" id="carrito-vacio" hidden>Todavía no agregaste productos. Elegí algo del catálogo y tocá "Agregar".</p>
+    <p class="carrito-aviso" id="carrito-aviso" role="alert"></p>
+    <ul class="carrito-lista" id="carrito-lista"></ul>
+    <p class="carrito-nota-consultar" id="carrito-nota-consultar" hidden>Los productos "a consultar" no están incluidos en el total — el precio se confirma al responder.</p>
+
+    <div class="carrito-panel__datos">
+      <div class="form-row">
+        <label for="carrito-nombre">Tu nombre (opcional)</label>
+        <input type="text" id="carrito-nombre" autocomplete="name">
+      </div>
+      <div class="form-row">
+        <label for="carrito-comentarios">Comentarios / aclaraciones (opcional)</label>
+        <textarea id="carrito-comentarios" rows="2" placeholder="Ej: medio kilo, para el sábado, sabores..."></textarea>
+      </div>
+    </div>
+  </div>
+
+  <div class="carrito-panel__footer">
+    <div class="carrito-total">
+      <span>Total</span>
+      <strong id="carrito-total">$0</strong>
+    </div>
+    <button type="button" class="btn btn--whatsapp btn--full" id="carrito-enviar">Enviar pedido por WhatsApp</button>
+    <button type="button" class="btn btn--outline btn--full" id="carrito-vaciar">Vaciar carrito</button>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase-config.js?v=b264b9c"></script>
 <script src="js/data.js?v=b264b9c"></script>
