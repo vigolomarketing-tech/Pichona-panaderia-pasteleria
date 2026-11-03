@@ -77,9 +77,8 @@
       ? `<span class="producto-card__precio">Consultar precio</span>`
       : `<span class="producto-card__precio">${fmtPrecio(p.precio)} <span>${p.unidad}</span></span>`;
 
-    const mensaje = `Hola Euge! Quería encargar: ${p.nombre}`;
     const botonPedir = p.disponible
-      ? `<a class="btn btn--whatsapp btn--small" href="${linkWhatsApp(mensaje)}" target="_blank" rel="noopener">Pedir</a>`
+      ? `<button type="button" class="btn btn--primary btn--small" data-rol="agregar-carrito" data-id="${p.id}">Agregar</button>`
       : `<span class="badge-agotado">De temporada</span>`;
 
     // Mientras no haya una foto real cargada, no mostramos ningún espacio
@@ -241,6 +240,325 @@
   }
 
   cargarCategoriasEnVivo();
+
+  // ------------------------------------------------------------------
+  // CARRITO
+  //
+  // Guarda solo { id, cantidad } por línea — nunca precio ni nombre — así
+  // que cada vez que se muestra o se envía el carrito, los datos del
+  // producto (precio, nombre, unidad) se buscan de nuevo en
+  // "productosActuales" (el catálogo en vivo). Esto resuelve solo, sin
+  // código aparte, tanto un precio que cambió desde el panel como un
+  // producto nuevo creado ahí: alcanza con que exista en el catálogo.
+  // ------------------------------------------------------------------
+  const CARRITO_KEY = "pichona-carrito";
+
+  const carritoFlotanteBtn = document.getElementById("carrito-flotante");
+  const carritoBadge = document.getElementById("carrito-badge");
+  const carritoToast = document.getElementById("carrito-toast");
+  const carritoOverlay = document.getElementById("carrito-overlay");
+  const carritoPanel = document.getElementById("carrito-panel");
+  const carritoCerrarBtn = document.getElementById("carrito-cerrar");
+  const carritoVacioEl = document.getElementById("carrito-vacio");
+  const carritoAvisoEl = document.getElementById("carrito-aviso");
+  const carritoListaEl = document.getElementById("carrito-lista");
+  const carritoNotaConsultarEl = document.getElementById("carrito-nota-consultar");
+  const carritoNombreInput = document.getElementById("carrito-nombre");
+  const carritoComentariosInput = document.getElementById("carrito-comentarios");
+  const carritoTotalEl = document.getElementById("carrito-total");
+  const carritoEnviarBtn = document.getElementById("carrito-enviar");
+  const carritoVaciarBtn = document.getElementById("carrito-vaciar");
+
+  function cargarCarritoGuardado() {
+    try {
+      const raw = localStorage.getItem(CARRITO_KEY);
+      if (!raw) return { items: [], nombre: "", comentarios: "" };
+      const datos = JSON.parse(raw);
+      const items = Array.isArray(datos.items)
+        ? datos.items.filter((it) => it && typeof it.id === "string" && Number.isInteger(it.cantidad) && it.cantidad > 0)
+        : [];
+      return {
+        items,
+        nombre: typeof datos.nombre === "string" ? datos.nombre : "",
+        comentarios: typeof datos.comentarios === "string" ? datos.comentarios : ""
+      };
+    } catch (err) {
+      console.warn("No se pudo leer el carrito guardado, arranca vacío.", err);
+      return { items: [], nombre: "", comentarios: "" };
+    }
+  }
+
+  function guardarCarrito() {
+    try {
+      localStorage.setItem(CARRITO_KEY, JSON.stringify(carrito));
+    } catch (err) {
+      console.warn("No se pudo guardar el carrito (¿localStorage deshabilitado?). Sigue funcionando en esta sesión.", err);
+    }
+  }
+
+  let carrito = cargarCarritoGuardado();
+  carritoNombreInput.value = carrito.nombre;
+  carritoComentariosInput.value = carrito.comentarios;
+
+  function buscarProducto(id) {
+    return productosActuales.find((p) => p.id === id) || null;
+  }
+
+  function actualizarBadge() {
+    const totalUnidades = carrito.items.reduce((acc, it) => acc + it.cantidad, 0);
+    carritoBadge.textContent = String(totalUnidades);
+    carritoBadge.hidden = totalUnidades === 0;
+    carritoFlotanteBtn.setAttribute(
+      "aria-label",
+      totalUnidades > 0 ? `Ver carrito (${totalUnidades} producto${totalUnidades === 1 ? "" : "s"})` : "Ver carrito"
+    );
+  }
+
+  // Refleja de entrada la cantidad guardada de una sesión anterior, sin
+  // esperar a que se abra el panel (que es donde recién se revalida contra
+  // el catálogo).
+  actualizarBadge();
+
+  let toastTimeout;
+  function mostrarToast(mensaje) {
+    carritoToast.textContent = mensaje;
+    carritoToast.hidden = false;
+    requestAnimationFrame(() => carritoToast.classList.add("is-visible"));
+    clearTimeout(toastTimeout);
+    toastTimeout = setTimeout(() => {
+      carritoToast.classList.remove("is-visible");
+      setTimeout(() => { carritoToast.hidden = true; }, 200);
+    }, 1600);
+  }
+
+  function agregarAlCarrito(id) {
+    const producto = buscarProducto(id);
+    if (!producto) return;
+
+    const existente = carrito.items.find((it) => it.id === id);
+    if (existente) {
+      existente.cantidad += 1;
+    } else {
+      carrito.items.push({ id, cantidad: 1 });
+    }
+    guardarCarrito();
+    actualizarBadge();
+    mostrarToast("Agregado ✓");
+    if (!carritoPanel.hidden) renderCarrito();
+  }
+
+  function cambiarCantidad(id, delta) {
+    const item = carrito.items.find((it) => it.id === id);
+    if (!item) return;
+    item.cantidad = Math.max(1, item.cantidad + delta);
+    guardarCarrito();
+    renderCarrito();
+  }
+
+  function quitarDelCarrito(id) {
+    carrito.items = carrito.items.filter((it) => it.id !== id);
+    guardarCarrito();
+    renderCarrito();
+  }
+
+  carritoVaciarBtn.addEventListener("click", () => {
+    if (carrito.items.length === 0) return;
+    if (!window.confirm("¿Vaciar el carrito?")) return;
+    carrito.items = [];
+    guardarCarrito();
+    renderCarrito();
+  });
+
+  // Antes de mostrar o enviar el carrito, se revalida cada línea contra el
+  // catálogo en vivo: si un producto ya no existe (lo borraron, o todavía
+  // no cargó el catálogo de Supabase), se saca del carrito y se avisa acá
+  // mismo en vez de fallar más adelante al armar el mensaje de WhatsApp.
+  function revalidarCarrito() {
+    const antes = carrito.items.length;
+    carrito.items = carrito.items.filter((it) => buscarProducto(it.id) !== null);
+    const sacados = antes - carrito.items.length;
+    if (sacados > 0) guardarCarrito();
+    return sacados;
+  }
+
+  function renderCarrito() {
+    const sacados = revalidarCarrito();
+    carritoAvisoEl.textContent = sacados > 0
+      ? `Se sacaron del carrito ${sacados} producto${sacados === 1 ? "" : "s"} que ya no está${sacados === 1 ? "" : "n"} disponible${sacados === 1 ? "" : "s"}.`
+      : "";
+
+    actualizarBadge();
+
+    if (carrito.items.length === 0) {
+      carritoListaEl.innerHTML = "";
+      carritoVacioEl.hidden = false;
+      carritoNotaConsultarEl.hidden = true;
+      carritoTotalEl.textContent = fmtPrecio(0);
+      carritoEnviarBtn.disabled = true;
+      carritoVaciarBtn.disabled = true;
+      return;
+    }
+
+    carritoVacioEl.hidden = true;
+    carritoEnviarBtn.disabled = false;
+    carritoVaciarBtn.disabled = false;
+
+    let total = 0;
+    let hayConsultar = false;
+
+    carritoListaEl.innerHTML = carrito.items
+      .map((it) => {
+        const p = buscarProducto(it.id);
+        const precioHTML = p.precio == null
+          ? `<p class="carrito-item__precio">Precio a consultar</p>`
+          : `<p class="carrito-item__precio">${fmtPrecio(p.precio)} <span>/ ${p.unidad}</span></p>`;
+
+        let subtotalHTML;
+        if (p.precio == null) {
+          hayConsultar = true;
+          subtotalHTML = `<p class="carrito-item__subtotal carrito-item__subtotal--consultar">A consultar</p>`;
+        } else {
+          total += p.precio * it.cantidad;
+          subtotalHTML = `<p class="carrito-item__subtotal">${fmtPrecio(p.precio * it.cantidad)}</p>`;
+        }
+
+        return `
+          <li class="carrito-item" data-id="${p.id}">
+            <div class="carrito-item__info">
+              <p class="carrito-item__nombre">${p.nombre}</p>
+              ${precioHTML}
+            </div>
+            <div class="carrito-item__cantidad">
+              <button type="button" class="carrito-item__paso" data-rol="restar" aria-label="Restar una unidad de ${p.nombre}">−</button>
+              <span>${it.cantidad}</span>
+              <button type="button" class="carrito-item__paso" data-rol="sumar" aria-label="Sumar una unidad de ${p.nombre}">+</button>
+            </div>
+            ${subtotalHTML}
+            <button type="button" class="carrito-item__quitar" data-rol="quitar" aria-label="Quitar ${p.nombre} del carrito">🗑</button>
+          </li>`;
+      })
+      .join("");
+
+    carritoTotalEl.textContent = hayConsultar
+      ? (total > 0 ? `${fmtPrecio(total)} + a consultar` : "A consultar")
+      : fmtPrecio(total);
+    carritoNotaConsultarEl.hidden = !hayConsultar;
+
+    carritoListaEl.querySelectorAll(".carrito-item").forEach((li) => {
+      const id = li.dataset.id;
+      li.querySelector('[data-rol="restar"]').addEventListener("click", () => cambiarCantidad(id, -1));
+      li.querySelector('[data-rol="sumar"]').addEventListener("click", () => cambiarCantidad(id, 1));
+      li.querySelector('[data-rol="quitar"]').addEventListener("click", () => quitarDelCarrito(id));
+    });
+  }
+
+  gridProductos.addEventListener("click", (e) => {
+    const btn = e.target.closest('[data-rol="agregar-carrito"]');
+    if (!btn) return;
+    agregarAlCarrito(btn.dataset.id);
+  });
+
+  // ---------------- Abrir / cerrar el panel (accesible) ----------------
+  let elementoAntesDeAbrir = null;
+
+  function atraparFoco(e) {
+    if (e.key !== "Tab") return;
+    const focosPosibles = carritoPanel.querySelectorAll(
+      'button:not(:disabled), [href], input, textarea, select, [tabindex]:not([tabindex="-1"])'
+    );
+    if (focosPosibles.length === 0) return;
+    const primero = focosPosibles[0];
+    const ultimo = focosPosibles[focosPosibles.length - 1];
+    if (e.shiftKey && document.activeElement === primero) {
+      e.preventDefault();
+      ultimo.focus();
+    } else if (!e.shiftKey && document.activeElement === ultimo) {
+      e.preventDefault();
+      primero.focus();
+    }
+  }
+
+  function onCarritoKeydown(e) {
+    if (e.key === "Escape") {
+      cerrarCarrito();
+    } else {
+      atraparFoco(e);
+    }
+  }
+
+  function abrirCarrito() {
+    elementoAntesDeAbrir = document.activeElement;
+    renderCarrito();
+    carritoOverlay.hidden = false;
+    carritoPanel.hidden = false;
+    requestAnimationFrame(() => {
+      carritoOverlay.classList.add("is-open");
+      carritoPanel.classList.add("is-open");
+    });
+    document.body.classList.add("no-scroll");
+    carritoCerrarBtn.focus();
+    document.addEventListener("keydown", onCarritoKeydown);
+  }
+
+  function cerrarCarrito() {
+    carritoOverlay.classList.remove("is-open");
+    carritoPanel.classList.remove("is-open");
+    document.body.classList.remove("no-scroll");
+    document.removeEventListener("keydown", onCarritoKeydown);
+    setTimeout(() => {
+      carritoOverlay.hidden = true;
+      carritoPanel.hidden = true;
+    }, 250);
+    if (elementoAntesDeAbrir && typeof elementoAntesDeAbrir.focus === "function") {
+      elementoAntesDeAbrir.focus();
+    }
+  }
+
+  carritoFlotanteBtn.addEventListener("click", abrirCarrito);
+  carritoCerrarBtn.addEventListener("click", cerrarCarrito);
+  carritoOverlay.addEventListener("click", cerrarCarrito);
+
+  // ---------------- Enviar el pedido por WhatsApp ----------------
+  carritoEnviarBtn.addEventListener("click", () => {
+    const sacados = revalidarCarrito();
+    if (sacados > 0 || carrito.items.length === 0) {
+      // Si se sacó algo del carrito recién ahora, se muestra el aviso y se
+      // frena el envío — el cliente ve qué cambió y confirma con un
+      // segundo toque, en vez de mandar un pedido que ya no es el que armó.
+      renderCarrito();
+      return;
+    }
+
+    const nombre = carritoNombreInput.value.trim();
+    const comentarios = carritoComentariosInput.value.trim();
+    carrito.nombre = nombre;
+    carrito.comentarios = comentarios;
+    guardarCarrito();
+
+    let total = 0;
+    let hayConsultar = false;
+    const lineasProductos = carrito.items.map((it) => {
+      const p = buscarProducto(it.id);
+      if (p.precio == null) {
+        hayConsultar = true;
+        return `${it.cantidad} x ${p.nombre} (${p.unidad}) — precio a consultar`;
+      }
+      const subtotal = p.precio * it.cantidad;
+      total += subtotal;
+      return `${it.cantidad} x ${p.nombre} (${p.unidad}) — ${fmtPrecio(subtotal)}`;
+    });
+
+    const lineas = ["Hola Euge! Quería hacer este pedido:", "", ...lineasProductos, ""];
+
+    lineas.push(`Total: ${fmtPrecio(total)}${hayConsultar ? " (sin contar los productos a consultar)" : ""}`);
+
+    if (nombre) lineas.push(`Nombre: ${nombre}`);
+    if (comentarios) lineas.push(`Comentarios: ${comentarios}`);
+
+    lineas.push("", "Los precios se confirman al responder.");
+
+    window.open(linkWhatsApp(lineas.join("\n")), "_blank", "noopener");
+  });
 
   // ------------------------------------------------------------------
   // CATERING: combos, bocaditos, personalizados, condiciones
