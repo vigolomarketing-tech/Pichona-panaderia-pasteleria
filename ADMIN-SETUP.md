@@ -96,6 +96,25 @@ Este archivo también suma explícitamente los permisos de `select` (para cualqu
 
 También es seguro correrlo de nuevo si hiciera falta.
 
+## Paso 3sexies — Catering editable (migración nueva)
+
+Toda la sección de catering que antes estaba fija en el código ahora se edita desde una sección nueva "Catering" en el panel (al final, después de "Imágenes del sitio"): los 4 combos (Lunch Box 20 personas, Caja de 30 bocaditos, Un toque gourmet, Mesa dulce) y los 4 pedidos personalizados (sándwiches de figacitas, medialunas rellenas, pizzetas, empanadas de copetín). De cada combo se puede cambiar nombre, precio, unidad, descripción corta y la lista de "qué incluye" (un ítem por línea en un textarea, que el sitio público muestra como viñetas); de cada pedido personalizado, nombre, descripción y precio. En los dos casos, si el precio queda vacío el sitio muestra "Consultar" en su lugar — igual que ya pasaba con la Mesa dulce.
+
+**Las fotos de los combos no se tocan desde esta sección nueva** — se siguen editando donde ya estaban, en "Imágenes del sitio" (las tarjetas "Catering — ...").
+
+También repensé el atajo "↓ Catering" de los filtros de categoría: antes llevaba a las tarjetas de fotos de catering dentro de "Imágenes del sitio"; ahora lleva directo a esta sección nueva de texto y precios, que es el uso más frecuente. Las fotos de catering se siguen viendo normal más arriba, scrolleando, sin ningún atajo aparte.
+
+1. En el dashboard: **SQL Editor → New query**.
+2. Abrí el archivo `sql/catering_contenido.sql` de este repo, copiá **todo** su contenido, y pegalo en el editor.
+3. Click en **Run**.
+4. Si salió bien, deberías ver dos tablas nuevas en **Table Editor**: `catering_combos` con 4 filas y `catering_pedidos` con 4 filas, con el texto y los precios de hoy (no se tocó ningún precio al cargar esto — los corrigen ustedes desde el panel, o me los pasan y los cargo yo).
+
+Este archivo también suma los `grant` explícitos de `select` (para cualquier visitante y para el usuario logueado) y `update` (solo para el usuario logueado) sobre las dos tablas nuevas, por el mismo motivo que en los pasos anteriores — lo validé localmente con los roles reales antes de pasarte este archivo.
+
+También es seguro correrlo de nuevo si hiciera falta.
+
+Por ahora el panel solo permite editar el contenido de los combos y pedidos que ya existen — no hace falta (ni se puede desde acá) agregar uno nuevo ni borrar alguno. Si en algún momento hace falta, me avisás.
+
 ## Paso 4 — Crear el usuario de Euge
 
 Vos das de alta el usuario desde el dashboard — no hace falta tocar código para esto, y es la forma más segura (evita tener que exponer nada en el sitio para que alguien se registre solo):
@@ -122,8 +141,10 @@ Los cambios de `js/supabase-config.js` (con las credenciales reales) tienen que 
 7. Tocá "+ Agregar producto" (el formulario tiene que estar cerrado hasta que lo tocás), completá nombre / categoría (elegida de la lista) / unidad / descripción / precio, sin cargar foto, y guardá → tiene que aparecer en la lista con "Sin foto", en la categoría elegida, y el formulario se cierra solo. Repetí cargando una foto esta vez, para probar también ese camino. Probá también "Cancelar" y confirmá que cierra el formulario sin crear nada.
 8. En los filtros de categoría, tocá el lápiz de una categoría de prueba, escribí un nombre nuevo y guardá (con el botón ✓ o apretando Enter) → la pastilla cambia de nombre al toque, y ese mismo nombre nuevo aparece también en la categoría de cada producto de la lista y en el desplegable de "+ Agregar producto". Probá "Cancelar" (✕) y confirmá que no guarda nada.
 9. Más abajo en el panel, probá lo mismo en la sección "Imágenes del sitio" (7 tarjetas: 4 de la galería + 3 de catering) — mismo botón "Cambiar foto", mismo resultado. Probá puntualmente con "Catering — Bocaditos fríos" y confirmá que al recargar el sitio se actualizan juntas las tarjetas de "Lunch Box 20 personas" y "Un toque gourmet" (comparten la misma foto a propósito).
-10. Abrí el sitio público (`/index.html` o la home) en otra pestaña o en el celular, **recargá la página**, y confirmá que los cambios del panel ya se ven ahí (el producto editado, el producto nuevo, la foto decorativa y el nombre de categoría que renombraste). Esa es la prueba de que quedó todo conectado de punta a punta.
-11. Cerrá sesión con el botón del panel y confirmá que vuelve a pedir login.
+10. Al final del panel, en "Catering", cambiá el precio y algún texto de un combo de prueba (probá también vaciar el precio: tiene que guardar igual, para mostrar "Consultar") y tocá "Guardar" en esa tarjeta → tiene que aparecer "Guardado ✓". Agregá o sacá una línea de "Qué incluye" y guardá de nuevo. Repetí con un pedido personalizado.
+11. Tocá la pastilla "↓ Catering" arriba del catálogo y confirmá que te lleva directo a esta sección nueva (ya no a las fotos).
+12. Abrí el sitio público (`/index.html` o la home) en otra pestaña o en el celular, **recargá la página**, y confirmá que los cambios del panel ya se ven ahí: el producto editado, el producto nuevo, la foto decorativa, el nombre de categoría que renombraste, y el combo/pedido de catering que acabás de editar (incluida la lista de "incluye" y el "Consultar" si vaciaste un precio). Esa es la prueba de que quedó todo conectado de punta a punta.
+13. Cerrá sesión con el botón del panel y confirmá que vuelve a pedir login.
 
 Si algo de esto no pasa, lo más probable es un typo en `js/supabase-config.js` o que el script SQL no se haya corrido — no hace falta tocar nada más del código.
 
@@ -136,3 +157,4 @@ Si algo de esto no pasa, lo más probable es un typo en `js/supabase-config.js` 
 - Las categorías se pueden renombrar (solo la etiqueta `nombre` en la tabla `categorias`), pero no crear ni borrar desde el panel — el `id` interno de cada categoría, el que asocia a cada producto, no se toca nunca.
 - El límite de tamaño de foto es 15 MB por archivo, validado en el navegador antes de intentar subir nada — si se supera, se muestra un error claro en el panel, no falla en silencio.
 - Cada foto subida se recorta automáticamente al centro en un cuadrado de hasta 1200×1200 px antes de subirse, para que coincida con la proporción 1:1 que usa la grilla de productos del catálogo público — no hace falta que la dueña recorte nada de su lado.
+- Los combos y pedidos personalizados de catering (`catering_combos` / `catering_pedidos`) se pueden editar pero no crear ni borrar desde el panel — el `id` interno de cada uno no se toca nunca. Las fotos de los combos siguen viviendo en `site_images`, no en estas tablas.

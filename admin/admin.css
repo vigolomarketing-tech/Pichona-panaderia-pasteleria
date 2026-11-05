@@ -383,3 +383,50 @@
 }
 .admin-imagen-card__estado--ok { color: #2E7D42; }
 .admin-imagen-card__estado--error { color: #B3392C; }
+
+/* ---------------- Catering (combos y pedidos personalizados) ---------------- */
+.admin-catering-seccion {
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--color-borde);
+  scroll-margin-top: 130px;
+}
+.admin-catering-seccion h2 {
+  font-size: 1.5rem;
+  margin-bottom: 0.3em;
+}
+.admin-catering-seccion h3 {
+  font-size: 1.15rem;
+  margin: 1.75rem 0 1rem;
+}
+.admin-catering-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+@media (min-width: 780px) {
+  .admin-catering-grid { grid-template-columns: repeat(2, 1fr); }
+}
+.admin-combo-card {
+  background: #fff;
+  border: 1px solid var(--color-borde);
+  border-radius: 12px;
+  padding: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+.admin-combo-card__fila {
+  display: flex;
+  gap: 0.85rem;
+  flex-wrap: wrap;
+}
+.admin-combo-card__fila .form-row {
+  flex: 1;
+  min-width: 9em;
+}
+.admin-combo-card__acciones {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}

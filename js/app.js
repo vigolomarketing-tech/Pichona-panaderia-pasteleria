@@ -575,12 +575,15 @@
     return match ? match[1] : null;
   }
 
-  document.getElementById("catering-combos").innerHTML = PICHONA.catering.combos
-    .map((c) => {
-      const precioHTML = c.precio == null
-        ? `<p class="combo-card__precio">Consultar</p>`
-        : `<p class="combo-card__precio">${fmtPrecio(c.precio)} <span style="font-weight:400;color:#CBBEA9;font-size:0.8rem;"> / ${c.unidad}</span></p>`;
-      return `
+  // combos, pedidos personalizados y las casillas del form de cotización se
+  // arman con funciones (no solo una vez al cargar) porque los tres se
+  // vuelven a dibujar cuando llega el contenido en vivo de Supabase más
+  // abajo — igual que ya pasaba con los tabs de categorías.
+  function comboCardHTML(c) {
+    const precioHTML = c.precio == null
+      ? `<p class="combo-card__precio">Consultar</p>`
+      : `<p class="combo-card__precio">${fmtPrecio(c.precio)} <span style="font-weight:400;color:#CBBEA9;font-size:0.8rem;"> / ${c.unidad}</span></p>`;
+    return `
       <article class="combo-card${c.destacado ? " combo-card--destacado" : ""}">
         <div class="combo-card__img">
           <img src="${c.imagen}" alt="${c.nombre}" loading="lazy" width="600" height="450" data-site-image="${idImagenDesdeRuta(c.imagen)}">
@@ -594,8 +597,34 @@
           </ul>
         </div>
       </article>`;
-    })
-    .join("");
+  }
+
+  function renderCateringCombos() {
+    document.getElementById("catering-combos").innerHTML = PICHONA.catering.combos.map(comboCardHTML).join("");
+  }
+
+  function renderCateringPedidos() {
+    document.getElementById("catering-personalizados").innerHTML = PICHONA.catering.pedidosPersonalizados
+      .map((p) => {
+        const precioHTML = p.precio == null ? "Consultar" : fmtPrecio(p.precio);
+        return `<li><strong>${p.nombre}</strong><span>${p.descripcion}</span> <span class="precio-pers">${precioHTML}</span></li>`;
+      })
+      .join("");
+  }
+
+  function renderComboCheckboxes() {
+    document.getElementById("cat-combos-checkboxes").innerHTML = PICHONA.catering.combos
+      .map(
+        (c) => `
+        <label class="checkbox-item">
+          <input type="checkbox" name="interes" value="${c.nombre}">
+          ${c.nombre}
+        </label>`
+      )
+      .join("");
+  }
+
+  renderCateringCombos();
 
   document.getElementById("bocaditos-frios").innerHTML = PICHONA.catering.bocaditosFrios
     .map((b) => `<li><strong>${b.nombre}</strong><span>${b.variedades}</span></li>`)
@@ -605,25 +634,68 @@
     .map((b) => `<li><strong>${b.nombre}</strong></li>`)
     .join("");
 
-  document.getElementById("catering-personalizados").innerHTML = PICHONA.catering.pedidosPersonalizados
-    .map(
-      (p) => `<li><strong>${p.nombre}</strong><span>${p.descripcion}</span> <span class="precio-pers">${fmtPrecio(p.precio)}</span></li>`
-    )
-    .join("");
+  renderCateringPedidos();
 
   document.getElementById("catering-condiciones").innerHTML = PICHONA.catering.condiciones
     .map((c) => `<li>${c}</li>`)
     .join("");
 
-  document.getElementById("cat-combos-checkboxes").innerHTML = PICHONA.catering.combos
-    .map(
-      (c) => `
-      <label class="checkbox-item">
-        <input type="checkbox" name="interes" value="${c.nombre}">
-        ${c.nombre}
-      </label>`
-    )
-    .join("");
+  renderComboCheckboxes();
+
+  // ------------------------------------------------------------------
+  // CONTENIDO DE CATERING EN VIVO (Supabase) — opcional
+  //
+  // Los combos y los pedidos personalizados se pueden editar desde el
+  // panel de admin sin tocar código — viven en "catering_combos" y
+  // "catering_pedidos". El id interno de cada uno no cambia nunca, solo
+  // nombre/precio/unidad/descripción (y, en los combos, la lista de
+  // ítems incluidos). Las FOTOS de los combos siguen viniendo de
+  // "site_images", no de acá. Si no está configurado o falla la red, se
+  // sigue mostrando el contenido fijo de js/data.js.
+  // ------------------------------------------------------------------
+  async function cargarCateringEnVivo() {
+    const sb = crearClienteSupabase();
+    if (!sb) return;
+
+    try {
+      const [combosRes, pedidosRes] = await Promise.all([
+        sb.from("catering_combos").select("*"),
+        sb.from("catering_pedidos").select("*")
+      ]);
+      if (combosRes.error) throw combosRes.error;
+      if (pedidosRes.error) throw pedidosRes.error;
+
+      const combosPorId = {};
+      (combosRes.data || []).forEach((fila) => { combosPorId[fila.id] = fila; });
+      PICHONA.catering.combos.forEach((c) => {
+        const fila = combosPorId[c.id];
+        if (!fila) return;
+        c.nombre = fila.nombre;
+        c.precio = fila.precio;
+        c.unidad = fila.unidad;
+        c.descripcion = fila.descripcion || "";
+        c.incluye = (fila.incluye || "").split("\n").map((linea) => linea.trim()).filter(Boolean);
+      });
+
+      const pedidosPorId = {};
+      (pedidosRes.data || []).forEach((fila) => { pedidosPorId[fila.id] = fila; });
+      PICHONA.catering.pedidosPersonalizados.forEach((p) => {
+        const fila = pedidosPorId[p.id];
+        if (!fila) return;
+        p.nombre = fila.nombre;
+        p.precio = fila.precio;
+        p.descripcion = fila.descripcion || "";
+      });
+
+      renderCateringCombos();
+      renderCateringPedidos();
+      renderComboCheckboxes();
+    } catch (err) {
+      console.warn("No se pudo cargar el contenido de catering en vivo de Supabase, se sigue mostrando el fijo.", err);
+    }
+  }
+
+  cargarCateringEnVivo();
 
   // ------------------------------------------------------------------
   // FORMULARIO DE COTIZACIÓN DE CATERING → WhatsApp
