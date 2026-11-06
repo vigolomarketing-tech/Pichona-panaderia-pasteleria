@@ -78,6 +78,7 @@
         cargarProductos();
       });
       cargarImagenesDelSitio();
+      cargarCatering();
     } else {
       mostrarVista("login");
       formLogin.reset();
@@ -263,9 +264,11 @@
     poblarSelectCategorias();
   }
 
+  // Lleva a la sección "Catering" (texto y precios de combos/pedidos) —
+  // las FOTOS de catering se siguen editando aparte, en "Imágenes del
+  // sitio", que queda igual que antes y se llega scrolleando normal.
   function irASeccionCatering() {
-    const primeraTarjetaCatering = imagenesGridEl.querySelector('.admin-imagen-card[data-grupo="catering"]');
-    const destino = primeraTarjetaCatering || document.querySelector(".admin-sitio-imagenes");
+    const destino = document.getElementById("admin-catering-seccion") || document.querySelector(".admin-sitio-imagenes");
     if (destino) destino.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
@@ -853,5 +856,246 @@
     fila.imagen = urlPublica;
     card.querySelector('[data-rol="foto-slot"]').innerHTML = fotoSlotHTML(fila.imagen, fila.label, aspectoCSS(fila));
     setEstadoImagen(card, "Foto actualizada ✓", "ok");
+  }
+
+  // ------------------------------------------------------------------
+  // CATERING: combos y pedidos personalizados (texto y precio)
+  //
+  // Viven en "catering_combos" y "catering_pedidos" — el id interno de
+  // cada uno (el que ya tenían en el código) no se toca nunca desde acá,
+  // solo nombre/precio/unidad/descripción y, en los combos, la lista de
+  // ítems incluidos. Las FOTOS de los combos siguen viviendo en
+  // "site_images" (sección de arriba) — esta sección no las toca.
+  // ------------------------------------------------------------------
+  const cateringCombosEl = document.getElementById("admin-catering-combos");
+  const cateringCombosCargandoEl = document.getElementById("admin-catering-combos-cargando");
+  const cateringPedidosEl = document.getElementById("admin-catering-pedidos");
+  const cateringPedidosCargandoEl = document.getElementById("admin-catering-pedidos-cargando");
+
+  let cateringCombos = [];
+  let cateringPedidos = [];
+
+  async function cargarCatering() {
+    cargarCateringCombos();
+    cargarCateringPedidos();
+  }
+
+  async function cargarCateringCombos() {
+    const { data, error } = await sb.from("catering_combos").select("*").order("orden");
+
+    cateringCombosCargandoEl.hidden = true;
+
+    if (error) {
+      cateringCombosCargandoEl.hidden = false;
+      cateringCombosCargandoEl.textContent = "No se pudieron cargar los combos: " + error.message;
+      return;
+    }
+
+    cateringCombos = data || [];
+    if (cateringCombos.length === 0) {
+      cateringCombosEl.innerHTML = `<p class="admin-vacio">Todavía no hay combos cargados (falta correr sql/catering_contenido.sql).</p>`;
+      return;
+    }
+    renderCateringCombos();
+  }
+
+  async function cargarCateringPedidos() {
+    const { data, error } = await sb.from("catering_pedidos").select("*").order("orden");
+
+    cateringPedidosCargandoEl.hidden = true;
+
+    if (error) {
+      cateringPedidosCargandoEl.hidden = false;
+      cateringPedidosCargandoEl.textContent = "No se pudieron cargar los pedidos personalizados: " + error.message;
+      return;
+    }
+
+    cateringPedidos = data || [];
+    if (cateringPedidos.length === 0) {
+      cateringPedidosEl.innerHTML = `<p class="admin-vacio">Todavía no hay pedidos personalizados cargados (falta correr sql/catering_contenido.sql).</p>`;
+      return;
+    }
+    renderCateringPedidos();
+  }
+
+  function comboCardHTML(c) {
+    return `
+      <div class="admin-combo-card" data-id="${c.id}">
+        <div class="form-row">
+          <label>Nombre</label>
+          <input type="text" value="${escapeHtml(c.nombre)}" data-rol="combo-nombre" aria-label="Nombre del combo">
+        </div>
+        <div class="admin-combo-card__fila">
+          <div class="form-row">
+            <label>Precio (vacío = "Consultar")</label>
+            <input type="number" min="0" step="1" inputmode="numeric" value="${c.precio == null ? "" : c.precio}"
+              data-rol="combo-precio" aria-label="Precio del combo ${escapeHtml(c.nombre)}">
+          </div>
+          <div class="form-row">
+            <label>Unidad</label>
+            <input type="text" value="${escapeHtml(c.unidad)}" placeholder="combo, caja, 10 unidades..."
+              data-rol="combo-unidad" aria-label="Unidad del combo ${escapeHtml(c.nombre)}">
+          </div>
+        </div>
+        <div class="form-row">
+          <label>Descripción corta</label>
+          <textarea rows="2" data-rol="combo-descripcion" aria-label="Descripción del combo ${escapeHtml(c.nombre)}">${escapeHtml(c.descripcion)}</textarea>
+        </div>
+        <div class="form-row">
+          <label>Qué incluye (un ítem por línea)</label>
+          <textarea rows="5" data-rol="combo-incluye" aria-label="Ítems incluidos en el combo ${escapeHtml(c.nombre)}">${escapeHtml(c.incluye)}</textarea>
+        </div>
+        <p class="admin-error" data-rol="combo-error" role="alert"></p>
+        <div class="admin-combo-card__acciones">
+          <button type="button" class="btn btn--primary" data-rol="combo-guardar">Guardar</button>
+          <p class="admin-fila__estado" data-rol="combo-estado"></p>
+        </div>
+      </div>`;
+  }
+
+  function renderCateringCombos() {
+    cateringCombosEl.innerHTML = cateringCombos.map(comboCardHTML).join("");
+
+    cateringCombosEl.querySelectorAll(".admin-combo-card").forEach((card) => {
+      const id = card.dataset.id;
+      const combo = cateringCombos.find((c) => c.id === id);
+      card.querySelector('[data-rol="combo-guardar"]').addEventListener("click", () => guardarCombo(card, combo));
+    });
+  }
+
+  async function guardarCombo(card, combo) {
+    const inputNombre = card.querySelector('[data-rol="combo-nombre"]');
+    const inputPrecio = card.querySelector('[data-rol="combo-precio"]');
+    const inputUnidad = card.querySelector('[data-rol="combo-unidad"]');
+    const inputDescripcion = card.querySelector('[data-rol="combo-descripcion"]');
+    const inputIncluye = card.querySelector('[data-rol="combo-incluye"]');
+    const errorEl = card.querySelector('[data-rol="combo-error"]');
+    const btn = card.querySelector('[data-rol="combo-guardar"]');
+    const estadoEl = card.querySelector('[data-rol="combo-estado"]');
+
+    errorEl.textContent = "";
+    estadoEl.textContent = "";
+    estadoEl.className = "admin-fila__estado";
+
+    const nombre = inputNombre.value.trim();
+    const unidad = inputUnidad.value.trim();
+    const descripcion = inputDescripcion.value.trim();
+    const incluye = inputIncluye.value.trim();
+
+    if (!nombre) { errorEl.textContent = "El nombre no puede quedar vacío."; return; }
+    if (!unidad) { errorEl.textContent = "La unidad no puede quedar vacía."; return; }
+    if (!incluye) { errorEl.textContent = "Agregá al menos un ítem en \"Qué incluye\"."; return; }
+
+    const valorPrecio = inputPrecio.value.trim();
+    let precio = null;
+    if (valorPrecio !== "") {
+      precio = Number(valorPrecio);
+      if (!Number.isFinite(precio) || precio < 0) {
+        errorEl.textContent = "Ingresá un precio válido (o dejalo vacío para \"Consultar\").";
+        return;
+      }
+    }
+
+    btn.disabled = true;
+    estadoEl.textContent = "Guardando...";
+
+    const { error } = await sb
+      .from("catering_combos")
+      .update({ nombre, precio, unidad, descripcion: descripcion || null, incluye })
+      .eq("id", combo.id);
+
+    btn.disabled = false;
+
+    if (error) {
+      estadoEl.textContent = "No se pudo guardar: " + error.message;
+      estadoEl.className = "admin-fila__estado admin-fila__estado--error";
+      return;
+    }
+
+    Object.assign(combo, { nombre, precio, unidad, descripcion: descripcion || null, incluye });
+    estadoEl.textContent = "Guardado ✓";
+    estadoEl.className = "admin-fila__estado admin-fila__estado--ok";
+  }
+
+  function pedidoCardHTML(p) {
+    return `
+      <div class="admin-combo-card" data-id="${p.id}">
+        <div class="form-row">
+          <label>Nombre</label>
+          <input type="text" value="${escapeHtml(p.nombre)}" data-rol="pedido-nombre" aria-label="Nombre del pedido">
+        </div>
+        <div class="form-row">
+          <label>Precio (vacío = "Consultar")</label>
+          <input type="number" min="0" step="1" inputmode="numeric" value="${p.precio == null ? "" : p.precio}"
+            data-rol="pedido-precio" aria-label="Precio de ${escapeHtml(p.nombre)}">
+        </div>
+        <div class="form-row">
+          <label>Descripción</label>
+          <textarea rows="2" data-rol="pedido-descripcion" aria-label="Descripción de ${escapeHtml(p.nombre)}">${escapeHtml(p.descripcion)}</textarea>
+        </div>
+        <p class="admin-error" data-rol="pedido-error" role="alert"></p>
+        <div class="admin-combo-card__acciones">
+          <button type="button" class="btn btn--primary" data-rol="pedido-guardar">Guardar</button>
+          <p class="admin-fila__estado" data-rol="pedido-estado"></p>
+        </div>
+      </div>`;
+  }
+
+  function renderCateringPedidos() {
+    cateringPedidosEl.innerHTML = cateringPedidos.map(pedidoCardHTML).join("");
+
+    cateringPedidosEl.querySelectorAll(".admin-combo-card").forEach((card) => {
+      const id = card.dataset.id;
+      const pedido = cateringPedidos.find((p) => p.id === id);
+      card.querySelector('[data-rol="pedido-guardar"]').addEventListener("click", () => guardarPedido(card, pedido));
+    });
+  }
+
+  async function guardarPedido(card, pedido) {
+    const inputNombre = card.querySelector('[data-rol="pedido-nombre"]');
+    const inputPrecio = card.querySelector('[data-rol="pedido-precio"]');
+    const inputDescripcion = card.querySelector('[data-rol="pedido-descripcion"]');
+    const errorEl = card.querySelector('[data-rol="pedido-error"]');
+    const btn = card.querySelector('[data-rol="pedido-guardar"]');
+    const estadoEl = card.querySelector('[data-rol="pedido-estado"]');
+
+    errorEl.textContent = "";
+    estadoEl.textContent = "";
+    estadoEl.className = "admin-fila__estado";
+
+    const nombre = inputNombre.value.trim();
+    const descripcion = inputDescripcion.value.trim();
+
+    if (!nombre) { errorEl.textContent = "El nombre no puede quedar vacío."; return; }
+
+    const valorPrecio = inputPrecio.value.trim();
+    let precio = null;
+    if (valorPrecio !== "") {
+      precio = Number(valorPrecio);
+      if (!Number.isFinite(precio) || precio < 0) {
+        errorEl.textContent = "Ingresá un precio válido (o dejalo vacío para \"Consultar\").";
+        return;
+      }
+    }
+
+    btn.disabled = true;
+    estadoEl.textContent = "Guardando...";
+
+    const { error } = await sb
+      .from("catering_pedidos")
+      .update({ nombre, precio, descripcion: descripcion || null })
+      .eq("id", pedido.id);
+
+    btn.disabled = false;
+
+    if (error) {
+      estadoEl.textContent = "No se pudo guardar: " + error.message;
+      estadoEl.className = "admin-fila__estado admin-fila__estado--error";
+      return;
+    }
+
+    Object.assign(pedido, { nombre, precio, descripcion: descripcion || null });
+    estadoEl.textContent = "Guardado ✓";
+    estadoEl.className = "admin-fila__estado admin-fila__estado--ok";
   }
 })();

@@ -530,6 +530,7 @@ a { color: var(--color-camel-dark); }
 .form-row input,
 .form-row textarea,
 .form-row select {
+  width: 100%;
   font-family: var(--font-cuerpo);
   font-size: 1rem;
   padding: 0.7em 0.85em;
