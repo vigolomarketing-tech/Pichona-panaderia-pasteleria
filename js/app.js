@@ -177,6 +177,16 @@
   // configurado o falla la red, se siguen mostrando los archivos fijos
   // de assets/img/ que ya trae el HTML.
   // ------------------------------------------------------------------
+  // Caché de "site_images" por id, compartido con los combos de catering
+  // más abajo (ver fotoCombo): se llena acá apenas resuelve la consulta y
+  // se consulta desde ahí cada vez que se dibuja un combo, sin importar
+  // si esa consulta termina antes o después que la del contenido de
+  // catering — así ninguna de las dos pisa a la otra (ver nota en
+  // cargarCateringEnVivo más abajo, que fue justo el bug: al redibujar
+  // los combos con el contenido editable, la foto volvía a la fija por
+  // defecto si "site_images" todavía no había resuelto).
+  let imagenesSitioPorId = {};
+
   async function cargarImagenesDelSitioEnVivo() {
     const sb = crearClienteSupabase();
     if (!sb) return;
@@ -186,21 +196,23 @@
       if (error) throw error;
       if (!data) return;
 
+      data.forEach((fila) => { imagenesSitioPorId[fila.id] = fila; });
+
       // Se buscan los elementos recién acá (después del await) y no antes,
       // porque algunos — como las fotos de los combos de catering — todavía
       // no existen en el DOM en este punto del script: se arman más abajo,
       // de forma síncrona, y para cuando esta consulta a Supabase resuelve
       // ya terminaron de renderizarse.
-      const imgs = document.querySelectorAll("[data-site-image]");
-      if (imgs.length === 0) return;
-
-      const porId = {};
-      data.forEach((fila) => { porId[fila.id] = fila; });
-
-      imgs.forEach((img) => {
-        const fila = porId[img.dataset.siteImage];
+      document.querySelectorAll("[data-site-image]").forEach((img) => {
+        const fila = imagenesSitioPorId[img.dataset.siteImage];
         if (fila && fila.imagen) img.src = fila.imagen;
       });
+
+      // Si los combos de catering ya se habían dibujado (con la foto fija
+      // por defecto, porque esta consulta todavía no había resuelto), hay
+      // que volver a dibujarlos para que ahora sí tomen la foto real del
+      // caché recién completado.
+      renderCateringCombos();
     } catch (err) {
       console.warn("No se pudieron cargar las imágenes del sitio en vivo de Supabase, se siguen mostrando las fijas.", err);
     }
@@ -575,6 +587,18 @@
     return match ? match[1] : null;
   }
 
+  // La foto real de cada combo vive en "site_images" (se cambia desde
+  // "Imágenes del sitio" en el panel, nunca desde acá). Resuelve siempre
+  // contra el caché de cargarImagenesDelSitioEnVivo en vez de contra la
+  // ruta fija de c.imagen directamente, para no depender de qué consulta
+  // a Supabase (esta o la del contenido editable de catering) resuelve
+  // primero. Si esa fila todavía no cargó o no tiene foto, cae a la ruta
+  // fija (que es el placeholder "imagen pendiente") — igual que siempre.
+  function fotoCombo(c) {
+    const fila = imagenesSitioPorId[idImagenDesdeRuta(c.imagen)];
+    return fila && fila.imagen ? fila.imagen : c.imagen;
+  }
+
   // combos, pedidos personalizados y las casillas del form de cotización se
   // arman con funciones (no solo una vez al cargar) porque los tres se
   // vuelven a dibujar cuando llega el contenido en vivo de Supabase más
@@ -586,7 +610,7 @@
     return `
       <article class="combo-card${c.destacado ? " combo-card--destacado" : ""}">
         <div class="combo-card__img">
-          <img src="${c.imagen}" alt="${c.nombre}" loading="lazy" width="600" height="450" data-site-image="${idImagenDesdeRuta(c.imagen)}">
+          <img src="${fotoCombo(c)}" alt="${c.nombre}" loading="lazy" width="600" height="450" data-site-image="${idImagenDesdeRuta(c.imagen)}">
         </div>
         <div class="combo-card__body">
           <h3>${c.nombre}</h3>
